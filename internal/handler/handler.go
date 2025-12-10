@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -59,7 +60,7 @@ func (h *Handler) CreateOffer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.CreateOffer(r.Context(), req); err != nil {
-		h.respondError(w, http.StatusBadRequest, err.Error())
+		h.handleServiceError(w, err)
 		return
 	}
 
@@ -89,7 +90,7 @@ func (h *Handler) CreateTransactions(w http.ResponseWriter, r *http.Request) {
 
 	inserted, err := h.service.CreateTransactions(r.Context(), req.Transactions)
 	if err != nil {
-		h.respondError(w, http.StatusBadRequest, err.Error())
+		h.handleServiceError(w, err)
 		return
 	}
 
@@ -120,7 +121,7 @@ func (h *Handler) GetEligibleOffers(w http.ResponseWriter, r *http.Request) {
 
 	response, err := h.service.GetEligibleOffers(r.Context(), userID, now)
 	if err != nil {
-		h.respondError(w, http.StatusBadRequest, err.Error())
+		h.handleServiceError(w, err)
 		return
 	}
 
@@ -135,4 +136,13 @@ func (h *Handler) respondJSON(w http.ResponseWriter, status int, data interface{
 
 func (h *Handler) respondError(w http.ResponseWriter, status int, message string) {
 	h.respondJSON(w, status, models.ErrorResponse{Error: message})
+}
+
+func (h *Handler) handleServiceError(w http.ResponseWriter, err error) {
+	var validationErr *validation.ValidationError
+	if errors.As(err, &validationErr) {
+		h.respondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	h.respondError(w, http.StatusInternalServerError, "internal server error")
 }

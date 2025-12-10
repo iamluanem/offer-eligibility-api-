@@ -32,10 +32,6 @@ type EligibleOffersResponse struct {
 	EligibleOffers []EligibleOffer `json:"eligible_offers"`
 }
 
-type CreateOfferRequest struct {
-	Offer Offer `json:"offer"`
-}
-
 type CreateTransactionsRequest struct {
 	Transactions []Transaction `json:"transactions"`
 }
