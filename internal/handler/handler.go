@@ -65,7 +65,7 @@ func (h *Handler) CreateOffer(w http.ResponseWriter, r *http.Request) {
 		req.MCCWhitelist[i] = validation.SanitizeString(req.MCCWhitelist[i])
 	}
 
-	if err := h.service.CreateOffer(req); err != nil {
+	if err := h.service.CreateOffer(r.Context(), req); err != nil {
 		h.respondError(w, http.StatusBadRequest, err.Error())
 		return
 	}
