@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
@@ -48,7 +49,7 @@ func TestGetEligibleOffers_UserQualifies(t *testing.T) {
 		EndsAt:       time.Date(2025, 10, 31, 23, 59, 59, 0, time.UTC),
 	}
 
-	if err := svc.CreateOffer(offer); err != nil {
+	if err := svc.CreateOffer(context.Background(), offer); err != nil {
 		t.Fatalf("Failed to create offer: %v", err)
 	}
 
@@ -80,13 +81,13 @@ func TestGetEligibleOffers_UserQualifies(t *testing.T) {
 		},
 	}
 
-	_, err := svc.CreateTransactions(transactions)
+	_, err := svc.CreateTransactions(context.Background(), transactions)
 	if err != nil {
 		t.Fatalf("Failed to create transactions: %v", err)
 	}
 
 	// Check eligibility
-	response, err := svc.GetEligibleOffers(userID, now)
+	response, err := svc.GetEligibleOffers(context.Background(), userID, now)
 	if err != nil {
 		t.Fatalf("Failed to get eligible offers: %v", err)
 	}
@@ -123,7 +124,7 @@ func TestGetEligibleOffers_UserDoesNotQualify_NotEnoughTransactions(t *testing.T
 		EndsAt:       time.Date(2025, 10, 31, 23, 59, 59, 0, time.UTC),
 	}
 
-	if err := svc.CreateOffer(offer); err != nil {
+	if err := svc.CreateOffer(context.Background(), offer); err != nil {
 		t.Fatalf("Failed to create offer: %v", err)
 	}
 
@@ -147,13 +148,13 @@ func TestGetEligibleOffers_UserDoesNotQualify_NotEnoughTransactions(t *testing.T
 		},
 	}
 
-	_, err := svc.CreateTransactions(transactions)
+	_, err := svc.CreateTransactions(context.Background(), transactions)
 	if err != nil {
 		t.Fatalf("Failed to create transactions: %v", err)
 	}
 
 	// Check eligibility
-	response, err := svc.GetEligibleOffers(userID, now)
+	response, err := svc.GetEligibleOffers(context.Background(), userID, now)
 	if err != nil {
 		t.Fatalf("Failed to get eligible offers: %v", err)
 	}
@@ -186,7 +187,7 @@ func TestGetEligibleOffers_UserDoesNotQualify_OfferInactive(t *testing.T) {
 		EndsAt:       time.Date(2025, 10, 31, 23, 59, 59, 0, time.UTC),
 	}
 
-	if err := svc.CreateOffer(offer); err != nil {
+	if err := svc.CreateOffer(context.Background(), offer); err != nil {
 		t.Fatalf("Failed to create offer: %v", err)
 	}
 
@@ -202,13 +203,13 @@ func TestGetEligibleOffers_UserDoesNotQualify_OfferInactive(t *testing.T) {
 		},
 	}
 
-	_, err := svc.CreateTransactions(transactions)
+	_, err := svc.CreateTransactions(context.Background(), transactions)
 	if err != nil {
 		t.Fatalf("Failed to create transactions: %v", err)
 	}
 
 	// Check eligibility
-	response, err := svc.GetEligibleOffers(userID, now)
+	response, err := svc.GetEligibleOffers(context.Background(), userID, now)
 	if err != nil {
 		t.Fatalf("Failed to get eligible offers: %v", err)
 	}
@@ -241,7 +242,7 @@ func TestGetEligibleOffers_UserDoesNotQualify_OutOfTimeWindow(t *testing.T) {
 		EndsAt:       time.Date(2025, 10, 31, 23, 59, 59, 0, time.UTC),
 	}
 
-	if err := svc.CreateOffer(offer); err != nil {
+	if err := svc.CreateOffer(context.Background(), offer); err != nil {
 		t.Fatalf("Failed to create offer: %v", err)
 	}
 
@@ -257,13 +258,13 @@ func TestGetEligibleOffers_UserDoesNotQualify_OutOfTimeWindow(t *testing.T) {
 		},
 	}
 
-	_, err := svc.CreateTransactions(transactions)
+	_, err := svc.CreateTransactions(context.Background(), transactions)
 	if err != nil {
 		t.Fatalf("Failed to create transactions: %v", err)
 	}
 
 	// Check eligibility
-	response, err := svc.GetEligibleOffers(userID, now)
+	response, err := svc.GetEligibleOffers(context.Background(), userID, now)
 	if err != nil {
 		t.Fatalf("Failed to get eligible offers: %v", err)
 	}
@@ -345,13 +346,13 @@ func TestGetEligibleOffers_MultipleOffers(t *testing.T) {
 		},
 	}
 
-	_, err := svc.CreateTransactions(transactions)
+	_, err := svc.CreateTransactions(context.Background(), transactions)
 	if err != nil {
 		t.Fatalf("Failed to create transactions: %v", err)
 	}
 
 	// Check eligibility
-	response, err := svc.GetEligibleOffers(userID, now)
+	response, err := svc.GetEligibleOffers(context.Background(), userID, now)
 	if err != nil {
 		t.Fatalf("Failed to get eligible offers: %v", err)
 	}
