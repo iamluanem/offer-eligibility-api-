@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"offer-eligibility-api/internal/models"
@@ -144,5 +145,12 @@ func (h *Handler) handleServiceError(w http.ResponseWriter, err error) {
 		h.respondError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+
+	errMsg := err.Error()
+	if strings.Contains(errMsg, "UNIQUE constraint") || strings.Contains(errMsg, "duplicate") {
+		h.respondError(w, http.StatusBadRequest, errMsg)
+		return
+	}
+
 	h.respondError(w, http.StatusInternalServerError, "internal server error")
 }
