@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"offer-eligibility-api/internal/database"
+	"offer-eligibility-api/internal/events"
 	"offer-eligibility-api/internal/models"
 
 	"github.com/google/uuid"
@@ -373,5 +374,165 @@ func TestGetEligibleOffers_MultipleOffers(t *testing.T) {
 	}
 	if !foundOfferIDs[offer2ID] {
 		t.Error("Expected offer2 to be eligible")
+	}
+}
+
+func TestSetEventManager(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	svc := NewService(db)
+	if svc.events != nil {
+		t.Error("Expected events to be nil initially")
+	}
+
+	eventManager := events.NewManager(true)
+	svc.SetEventManager(eventManager)
+
+	if svc.events == nil {
+		t.Error("Expected events to be set after SetEventManager")
+	}
+
+	if svc.events != eventManager {
+		t.Error("Expected events to be the same instance")
+	}
+}
+
+func TestCreateTransactions_EmptyList(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	svc := NewService(db)
+	_, err := svc.CreateTransactions(context.Background(), []models.Transaction{})
+
+	if err == nil {
+		t.Error("Expected error for empty transaction list")
+	}
+
+	if err.Error() != "no transactions provided" {
+		t.Errorf("Expected 'no transactions provided' error, got: %v", err)
+	}
+}
+
+func TestCreateTransactions_TooManyTransactions(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	svc := NewService(db)
+
+	transactions := make([]models.Transaction, 1001)
+	for i := 0; i < 1001; i++ {
+		transactions[i] = models.Transaction{
+			ID:          uuid.New().String(),
+			UserID:      uuid.New().String(),
+			MerchantID:  uuid.New().String(),
+			MCC:         "5812",
+			AmountCents: 1000,
+			ApprovedAt:  time.Date(2025, 10, 20, 12, 0, 0, 0, time.UTC),
+		}
+	}
+
+	_, err := svc.CreateTransactions(context.Background(), transactions)
+
+	if err == nil {
+		t.Error("Expected error for too many transactions")
+	}
+
+	if err.Error() != "cannot process more than 1000 transactions per request" {
+		t.Errorf("Expected 'cannot process more than 1000 transactions per request' error, got: %v", err)
+	}
+}
+
+func TestCreateOffer_WithEvents(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	svc := NewService(db)
+	eventManager := events.NewManager(true)
+	svc.SetEventManager(eventManager)
+
+	offer := models.Offer{
+		ID:           uuid.New().String(),
+		MerchantID:   uuid.New().String(),
+		MCCWhitelist: []string{"5812"},
+		Active:       true,
+		MinTxnCount:  3,
+		LookbackDays: 30,
+		StartsAt:     time.Date(2025, 10, 1, 0, 0, 0, 0, time.UTC),
+		EndsAt:       time.Date(2025, 10, 31, 23, 59, 59, 0, time.UTC),
+	}
+
+	err := svc.CreateOffer(context.Background(), offer)
+	if err != nil {
+		t.Fatalf("Failed to create offer: %v", err)
+	}
+
+	eventManager.Shutdown()
+}
+
+func TestCreateTransactions_WithEvents(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	svc := NewService(db)
+	eventManager := events.NewManager(true)
+	svc.SetEventManager(eventManager)
+
+	transactions := []models.Transaction{
+		{
+			ID:          uuid.New().String(),
+			UserID:      uuid.New().String(),
+			MerchantID:  uuid.New().String(),
+			MCC:         "5812",
+			AmountCents: 1000,
+			ApprovedAt:  time.Date(2025, 10, 20, 12, 0, 0, 0, time.UTC),
+		},
+	}
+
+	count, err := svc.CreateTransactions(context.Background(), transactions)
+	if err != nil {
+		t.Fatalf("Failed to create transactions: %v", err)
+	}
+
+	if count != 1 {
+		t.Errorf("Expected 1 inserted, got %d", count)
+	}
+
+	eventManager.Shutdown()
+}
+
+func TestGetEligibleOffers_WithEvents(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	svc := NewService(db)
+	eventManager := events.NewManager(true)
+	svc.SetEventManager(eventManager)
+
+	userID := uuid.New().String()
+	now := time.Date(2025, 10, 21, 10, 0, 0, 0, time.UTC)
+
+	response, err := svc.GetEligibleOffers(context.Background(), userID, now)
+	if err != nil {
+		t.Fatalf("Failed to get eligible offers: %v", err)
+	}
+
+	if response.UserID != userID {
+		t.Errorf("Expected user_id %s, got %s", userID, response.UserID)
+	}
+
+	eventManager.Shutdown()
+}
+
+func TestGetEligibleOffers_InvalidUserID(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	svc := NewService(db)
+	now := time.Date(2025, 10, 21, 10, 0, 0, 0, time.UTC)
+
+	_, err := svc.GetEligibleOffers(context.Background(), "invalid-uuid", now)
+	if err == nil {
+		t.Error("Expected error for invalid user_id")
 	}
 }
