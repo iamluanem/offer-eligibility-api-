@@ -14,6 +14,7 @@ import (
 	"context"
 	"offer-eligibility-api/internal/config"
 	"offer-eligibility-api/internal/database"
+	"offer-eligibility-api/internal/features"
 	"offer-eligibility-api/internal/handler"
 	"offer-eligibility-api/internal/middleware"
 	"offer-eligibility-api/internal/service"
