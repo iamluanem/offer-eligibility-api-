@@ -196,16 +196,36 @@ OK
 
 ## Quick Start Testing
 
-The easiest way to test the API is using the provided test script. Make sure the server is running first.
+### Step 1: Start the Server
 
-### Option 1: Automated Test Script (Recommended)
+First, start the API server in a terminal:
+
+```bash
+go run cmd/api/main.go
+```
+
+You should see:
+```
+Starting HTTP server on :8080
+Database: ./offer_eligibility.db
+```
+
+**Keep this terminal open** - the server will continue running.
+
+### Step 2: Test the API
+
+Now you can test the API. Choose one of the options below:
+
+#### Option 1: Automated Test Script (Recommended)
+
+Open a **new terminal** and run:
 
 ```bash
 cd offer-eligibility-api-
 ./test-api.sh
 ```
 
-**Note:** The test script uses `localhost:3000` by default. If your server is running on a different port, edit `test-api.sh` and change the `API_URL` variable.
+**Note:** The test script uses `localhost:3000` by default. If your server is running on port 8080, edit `test-api.sh` and change the `API_URL` variable to `http://localhost:8080`.
 
 This script will:
 1. Check server health
@@ -213,11 +233,11 @@ This script will:
 3. Create 3 matching transactions
 4. Check eligible offers for a user
 
-### Option 2: Manual Testing
+#### Option 2: Manual Testing
 
-If you prefer to test manually, follow these steps:
+If you prefer to test manually, open a **new terminal** and follow these steps:
 
-#### 1. Health Check
+##### 1. Health Check
 
 ```bash
 curl http://localhost:8080/health
@@ -244,7 +264,7 @@ curl -X POST http://localhost:8080/offers \
 
 Expected response: The created offer object (JSON)
 
-#### 3. Create Transactions
+##### 3. Create Transactions
 
 ```bash
 curl -X POST http://localhost:8080/transactions \
@@ -263,7 +283,7 @@ curl -X POST http://localhost:8080/transactions \
 
 Expected response: `{"inserted": 1}`
 
-#### 4. Check Eligible Offers
+##### 4. Check Eligible Offers
 
 ```bash
 curl "http://localhost:8080/users/d5e5c023-f9b1-4eac-b9bd-f538ccca040d/eligible-offers?now=2025-10-21T10:00:00Z"
