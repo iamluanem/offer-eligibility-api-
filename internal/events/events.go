@@ -33,7 +33,7 @@ type OfferCreatedData struct {
 }
 
 // TransactionCreatedData contains data for transaction created events.
-type TransactionCreatedData {
+type TransactionCreatedData struct {
 	Transactions []models.Transaction
 	Count        int
 }
