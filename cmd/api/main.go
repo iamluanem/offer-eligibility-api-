@@ -11,21 +11,27 @@ import (
 
 	"offer-eligibility-api/internal/database"
 	"offer-eligibility-api/internal/handler"
+	"offer-eligibility-api/internal/middleware"
 	"offer-eligibility-api/internal/service"
+	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 )
 
 const (
-	defaultPort   = "8080"
-	defaultDBPath = "./offer_eligibility.db"
+	defaultPort        = "8080"
+	defaultDBPath      = "./offer_eligibility.db"
+	defaultRateLimit   = 100  // requests per window
+	defaultRateWindow  = 60   // seconds
 )
 
 func main() {
 	port := flag.String("port", defaultPort, "Server port")
 	dbPath := flag.String("db", defaultDBPath, "Database file path")
+	rateLimit := flag.Int("rate-limit", defaultRateLimit, "Rate limit (requests per window)")
+	rateWindow := flag.Int("rate-window", defaultRateWindow, "Rate limit window in seconds")
 	flag.Parse()
 
 	// Initialize database
@@ -41,14 +47,22 @@ func main() {
 	// Initialize handlers
 	h := handler.NewHandler(svc)
 
+	// Initialize rate limiter
+	rateLimiter := middleware.NewRateLimiter(*rateLimit, time.Duration(*rateWindow)*time.Second)
+	defer rateLimiter.Stop()
+
 	// Setup router
 	r := chi.NewRouter()
 
-	// Middleware
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	// Middleware (order matters)
+	r.Use(chimw.RequestID)
+	r.Use(chimw.RealIP)
+	r.Use(chimw.Logger)
+	r.Use(chimw.Recoverer)
+	
+	// Rate limiting middleware
+	r.Use(middleware.RateLimitMiddleware(rateLimiter))
+	
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -81,6 +95,7 @@ func main() {
 	addr := fmt.Sprintf(":%s", *port)
 	log.Printf("Starting server on %s", addr)
 	log.Printf("Database: %s", *dbPath)
+	log.Printf("Rate limit: %d requests per %d seconds", *rateLimit, *rateWindow)
 
 	server := &http.Server{
 		Addr:    addr,
