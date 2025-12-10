@@ -268,8 +268,6 @@ Expected response: The created offer object (JSON)
 
 ##### 3. Create Transactions
 
-**Note:** If you get a "UNIQUE constraint failed" error, the transaction ID already exists. Generate a new UUID or use a different ID.
-
 ```bash
 curl -X POST http://localhost:8080/transactions \
   -H "Content-Type: application/json" \
@@ -287,12 +285,11 @@ curl -X POST http://localhost:8080/transactions \
 
 Expected response: `{"inserted": 1}`
 
-**Tip:** To generate a new UUID for testing:
-```bash
-python3 -c "import uuid; print(uuid.uuid4())"
-# Or
-go run -c "package main; import \"github.com/google/uuid\"; func main() { println(uuid.New().String()) }"
-```
+**Important:** 
+- Transaction IDs must be unique. If you get a "UNIQUE constraint failed" error, the transaction ID already exists in the database.
+- To test multiple times, change the `id` field to a different UUID (you can modify any character in the UUID).
+- Alternatively, delete the database file (`rm ./offer_eligibility.db`) and restart the server to start fresh.
+- The automated test script (`./test-api.sh`) handles this automatically by generating unique UUIDs.
 
 ##### 4. Check Eligible Offers
 
@@ -302,10 +299,12 @@ curl "http://localhost:8080/users/d5e5c023-f9b1-4eac-b9bd-f538ccca040d/eligible-
 
 Expected response: JSON with eligible offers for the user
 
-**Note:** 
+**Important Notes:**
 - Make sure the server is running before testing (see Step 1 above)
 - Replace `localhost:8080` with your server address and port if different
-- The UUIDs in the examples are valid UUID v4 format and can be reused for testing
+- The UUIDs in the examples are valid UUID v4 format
+- **If you get "UNIQUE constraint failed" errors**: The ID already exists in the database. Change the `id` field to a different UUID (modify any character) or delete the database file (`rm ./offer_eligibility.db`) and restart the server
+- **For repeated testing**: Use the automated test script (`./test-api.sh`) which generates unique UUIDs automatically, or manually change the UUIDs in the examples
 
 ## Running Unit Tests
 
