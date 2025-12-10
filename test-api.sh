@@ -9,7 +9,7 @@ TXN1_ID="510dbcad-af66-4c66-b3dc-a4a0c8fd5c1d"
 TXN2_ID="f0e78b4a-473b-48f2-9b16-5f64b789fcff"
 TXN3_ID="42f8015e-9e2d-45df-a573-9cd7673cbfc0"
 
-echo "🧪 Testando Offer Eligibility API"
+echo "🧪 Testing Offer Eligibility API"
 echo "=================================="
 echo ""
 
@@ -19,7 +19,7 @@ curl -s "$API_URL/health"
 echo ""
 echo ""
 
-echo "2️⃣  Criando Oferta"
+echo "2️⃣  Creating Offer"
 echo "------------------"
 curl -X POST "$API_URL/offers" \
   -H "Content-Type: application/json" \
@@ -36,7 +36,7 @@ curl -X POST "$API_URL/offers" \
 echo ""
 echo ""
 
-echo "3️⃣  Criando Transações"
+echo "3️⃣  Creating Transactions"
 echo "----------------------"
 curl -X POST "$API_URL/transactions" \
   -H "Content-Type: application/json" \
@@ -71,10 +71,10 @@ curl -X POST "$API_URL/transactions" \
 echo ""
 echo ""
 
-echo "4️⃣  Verificando Ofertas Elegíveis"
+echo "4️⃣  Checking Eligible Offers"
 echo "----------------------------------"
 curl -s "$API_URL/users/$USER_ID/eligible-offers?now=2025-10-21T10:00:00Z" | python3 -m json.tool 2>/dev/null || curl -s "$API_URL/users/$USER_ID/eligible-offers?now=2025-10-21T10:00:00Z"
 echo ""
 echo ""
 
-echo "✅ Testes concluídos!"
+echo "✅ Tests completed!"

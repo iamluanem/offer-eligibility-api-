@@ -194,22 +194,43 @@ Returns server health status.
 OK
 ```
 
-## Example Usage
+## Quick Start Testing
 
-### Step 1: Start the Server
+The easiest way to test the API is using the provided test script. Make sure the server is running first.
+
+### Option 1: Automated Test Script (Recommended)
 
 ```bash
-go run cmd/api/main.go
+cd offer-eligibility-api-
+./test-api.sh
 ```
 
-### Step 2: Create an Offer
+This script will:
+1. Check server health
+2. Create an offer
+3. Create 3 matching transactions
+4. Check eligible offers for a user
+
+### Option 2: Manual Testing
+
+If you prefer to test manually, follow these steps:
+
+#### 1. Health Check
+
+```bash
+curl http://localhost:8080/health
+```
+
+Expected response: `OK`
+
+#### 2. Create an Offer
 
 ```bash
 curl -X POST http://localhost:8080/offers \
   -H "Content-Type: application/json" \
   -d '{
-    "id": "7f5e5f2b-8a75-4d5e-9c6e-5c6b1e7e9a01",
-    "merchant_id": "a2d1e1a9-8b0c-4a6a-9b3a-2f9f1e0d9c11",
+    "id": "28722f71-6c76-4b23-8dbc-ccd2c3795171",
+    "merchant_id": "0b29823e-667e-4bf5-84d7-8eb39973a401",
     "mcc_whitelist": ["5812", "5814"],
     "active": true,
     "min_txn_count": 3,
@@ -219,46 +240,36 @@ curl -X POST http://localhost:8080/offers \
   }'
 ```
 
-### Step 3: Ingest Transactions
+Expected response: The created offer object (JSON)
+
+#### 3. Create Transactions
 
 ```bash
 curl -X POST http://localhost:8080/transactions \
   -H "Content-Type: application/json" \
   -d '{
-    "transactions": [
-      {
-        "id": "e4a3b6b7-0c2e-4e0b-9b7f-2a6c1d9e8f11",
-        "user_id": "9b8a7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d",
-        "merchant_id": "a2d1e1a9-8b0c-4a6a-9b3a-2f9f1e0d9c11",
-        "mcc": "5812",
-        "amount_cents": 1250,
-        "approved_at": "2025-10-20T12:34:56Z"
-      },
-      {
-        "id": "f9c2a1b0-3d4e-5f6a-7b8c-9d0e1f2a3b4c",
-        "user_id": "9b8a7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d",
-        "merchant_id": "a2d1e1a9-8b0c-4a6a-9b3a-2f9f1e0d9c11",
-        "mcc": "5812",
-        "amount_cents": 890,
-        "approved_at": "2025-10-19T13:10:00Z"
-      },
-      {
-        "id": "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
-        "user_id": "9b8a7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d",
-        "merchant_id": "other-merchant-id",
-        "mcc": "5814",
-        "amount_cents": 1500,
-        "approved_at": "2025-10-18T10:00:00Z"
-      }
-    ]
+    "transactions": [{
+      "id": "510dbcad-af66-4c66-b3dc-a4a0c8fd5c1d",
+      "user_id": "d5e5c023-f9b1-4eac-b9bd-f538ccca040d",
+      "merchant_id": "0b29823e-667e-4bf5-84d7-8eb39973a401",
+      "mcc": "5812",
+      "amount_cents": 1250,
+      "approved_at": "2025-10-20T12:34:56Z"
+    }]
   }'
 ```
 
-### Step 4: Check Eligibility
+Expected response: `{"inserted": 1}`
+
+#### 4. Check Eligible Offers
 
 ```bash
-curl "http://localhost:8080/users/9b8a7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d/eligible-offers?now=2025-10-21T10:00:00Z"
+curl "http://localhost:8080/users/d5e5c023-f9b1-4eac-b9bd-f538ccca040d/eligible-offers?now=2025-10-21T10:00:00Z"
 ```
+
+Expected response: JSON with eligible offers for the user
+
+**Note:** Replace `localhost:8080` with your server address and port if different. The UUIDs in the examples are valid UUID v4 format and can be reused for testing.
 
 ## Running Tests
 
