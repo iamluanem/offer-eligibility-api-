@@ -175,17 +175,24 @@ Implemented in `service.GetEligibleOffers()` by combining active offer check wit
 
 ## Error Handling Strategy
 
-### Validation Errors
+### Validation Errors (400 Bad Request)
 
-- **Input Validation**: Performed in service layer
-- **HTTP Status**: 400 Bad Request
-- **Response Format**: `{"error": "descriptive message"}`
+- **Input Validation**: Performed in service layer using `internal/validation` package
+- **HTTP Status**: `400 Bad Request`
+- **Response Format**: `{"error": "validation error on field 'id': must be a valid UUID v4"}`
+- **Types**: 
+  - Invalid UUID format
+  - Invalid MCC code format
+  - Invalid timestamp format
+  - Out of range values
+  - Duplicate IDs (UNIQUE constraint violations)
 
-### Database Errors
+### Server Errors (500 Internal Server Error)
 
-- **Wrapped Errors**: All database errors are wrapped with context
-- **HTTP Status**: 500 Internal Server Error (not exposed to users)
-- **Logging**: Errors logged at handler level (would add structured logging in production)
+- **Database Errors**: Unexpected database failures (connection issues, query failures)
+- **HTTP Status**: `500 Internal Server Error`
+- **Response Format**: `{"error": "internal server error"}` (generic message to avoid information leakage)
+- **Implementation**: Handler distinguishes validation errors from server errors using `errors.As()` to check for `validation.ValidationError` type
 
 ### Error Propagation
 
