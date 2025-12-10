@@ -14,18 +14,39 @@ import (
 
 // Handler provides HTTP handlers for the API.
 type Handler struct {
-	service *service.Service
+	service         *service.Service
+	maxBodySize     int64
+}
+
+// NewHandlerOptions holds options for creating a handler.
+type NewHandlerOptions struct {
+	MaxBodySize int64
+}
+
+// DefaultHandlerOptions returns default handler options.
+func DefaultHandlerOptions() NewHandlerOptions {
+	return NewHandlerOptions{
+		MaxBodySize: 10 << 20, // 10MB default
+	}
 }
 
 // NewHandler creates a new handler instance.
 func NewHandler(svc *service.Service) *Handler {
-	return &Handler{service: svc}
+	return NewHandlerWithOptions(svc, DefaultHandlerOptions())
+}
+
+// NewHandlerWithOptions creates a new handler instance with custom options.
+func NewHandlerWithOptions(svc *service.Service, opts NewHandlerOptions) *Handler {
+	return &Handler{
+		service:     svc,
+		maxBodySize: opts.MaxBodySize,
+	}
 }
 
 // CreateOffer handles POST /offers
 func (h *Handler) CreateOffer(w http.ResponseWriter, r *http.Request) {
-	// Limit request body size to prevent abuse (10MB max)
-	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
+	// Limit request body size to prevent abuse
+	r.Body = http.MaxBytesReader(w, r.Body, h.maxBodySize)
 
 	var req models.Offer
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -54,8 +75,8 @@ func (h *Handler) CreateOffer(w http.ResponseWriter, r *http.Request) {
 
 // CreateTransactions handles POST /transactions
 func (h *Handler) CreateTransactions(w http.ResponseWriter, r *http.Request) {
-	// Limit request body size to prevent abuse (10MB max)
-	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
+	// Limit request body size to prevent abuse
+	r.Body = http.MaxBytesReader(w, r.Body, h.maxBodySize)
 
 	var req models.CreateTransactionsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

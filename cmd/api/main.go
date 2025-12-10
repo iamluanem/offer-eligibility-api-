@@ -10,6 +10,8 @@ import (
 	"syscall"
 
 	"crypto/tls"
+	"strings"
+	"offer-eligibility-api/internal/config"
 	"offer-eligibility-api/internal/database"
 	"offer-eligibility-api/internal/handler"
 	"offer-eligibility-api/internal/middleware"
@@ -23,24 +25,29 @@ import (
 )
 
 const (
-	defaultPort        = "8080"
-	defaultDBPath      = "./offer_eligibility.db"
-	defaultRateLimit   = 100  // requests per window
-	defaultRateWindow  = 60   // seconds
+	defaultPort       = "8080"
+	defaultDBPath     = "./offer_eligibility.db"
+	defaultRateLimit  = 100 // requests per window
+	defaultRateWindow = 60  // seconds
 )
 
 func main() {
-	port := flag.String("port", defaultPort, "Server port")
-	dbPath := flag.String("db", defaultDBPath, "Database file path")
-	rateLimit := flag.Int("rate-limit", defaultRateLimit, "Rate limit (requests per window)")
-	rateWindow := flag.Int("rate-window", defaultRateWindow, "Rate limit window in seconds")
-	enableTLS := flag.Bool("tls", false, "Enable HTTPS/TLS")
-	certFile := flag.String("cert", "", "TLS certificate file path (required if -tls is set)")
-	keyFile := flag.String("key", "", "TLS private key file path (required if -tls is set)")
+	configFile := flag.String("config", "", "Path to configuration file (JSON)")
 	flag.Parse()
 
+	// Load configuration
+	cfg, err := config.LoadConfig(*configFile)
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	// Validate configuration
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("Invalid configuration: %v", err)
+	}
+
 	// Initialize database
-	db, err := database.NewDB(*dbPath)
+	db, err := database.NewDB(cfg.Database.Path)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
@@ -49,12 +56,17 @@ func main() {
 	// Initialize service
 	svc := service.NewService(db)
 
-	// Initialize handlers
-	h := handler.NewHandler(svc)
+	// Initialize handlers with configuration
+	h := handler.NewHandlerWithOptions(svc, handler.NewHandlerOptions{
+		MaxBodySize: cfg.Security.MaxRequestBodySize,
+	})
 
-	// Initialize rate limiter
-	rateLimiter := middleware.NewRateLimiter(*rateLimit, time.Duration(*rateWindow)*time.Second)
-	defer rateLimiter.Stop()
+	// Initialize rate limiter (if enabled)
+	var rateLimiter *middleware.RateLimiter
+	if cfg.RateLimit.Enabled {
+		rateLimiter = middleware.NewRateLimiter(cfg.RateLimit.Rate, time.Duration(cfg.RateLimit.Window)*time.Second)
+		defer rateLimiter.Stop()
+	}
 
 	// Setup router
 	r := chi.NewRouter()
@@ -65,11 +77,19 @@ func main() {
 	r.Use(chimw.Logger)
 	r.Use(chimw.Recoverer)
 	
-	// Rate limiting middleware
-	r.Use(middleware.RateLimitMiddleware(rateLimiter))
+	// Rate limiting middleware (if enabled)
+	if cfg.RateLimit.Enabled && rateLimiter != nil {
+		r.Use(middleware.RateLimitMiddleware(rateLimiter))
+	}
+	
+	// CORS configuration
+	allowedOrigins := strings.Split(cfg.Security.AllowedOrigins, ",")
+	for i := range allowedOrigins {
+		allowedOrigins[i] = strings.TrimSpace(allowedOrigins[i])
+	}
 	
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
+		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
@@ -98,10 +118,10 @@ func main() {
 
 	// Configure TLS if enabled
 	var tlsConfig *tls.Config
-	if *enableTLS {
+	if cfg.Server.EnableTLS {
 		tlsCfg := tlsconfig.Config{
-			CertFile: *certFile,
-			KeyFile:  *keyFile,
+			CertFile: cfg.Server.CertFile,
+			KeyFile:  cfg.Server.KeyFile,
 		}
 
 		var err error
@@ -110,20 +130,30 @@ func main() {
 			log.Fatalf("Failed to load TLS configuration: %v", err)
 		}
 
-		if *certFile == "" || *keyFile == "" {
+		if cfg.Server.CertFile == "" || cfg.Server.KeyFile == "" {
 			log.Println("WARNING: No certificate files provided, using self-signed certificate for development")
 		}
 	}
 
-	// Start server
-	addr := fmt.Sprintf(":%s", *port)
+	// Build server address
+	addr := cfg.Server.Port
+	if cfg.Server.Host != "" {
+		addr = fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
+	} else {
+		addr = fmt.Sprintf(":%s", cfg.Server.Port)
+	}
+
 	protocol := "HTTP"
-	if *enableTLS {
+	if cfg.Server.EnableTLS {
 		protocol = "HTTPS"
 	}
 	log.Printf("Starting %s server on %s", protocol, addr)
-	log.Printf("Database: %s", *dbPath)
-	log.Printf("Rate limit: %d requests per %d seconds", *rateLimit, *rateWindow)
+	log.Printf("Database: %s", cfg.Database.Path)
+	if cfg.RateLimit.Enabled {
+		log.Printf("Rate limit: %d requests per %d seconds", cfg.RateLimit.Rate, cfg.RateLimit.Window)
+	} else {
+		log.Println("Rate limiting: disabled")
+	}
 
 	server := &http.Server{
 		Addr:      addr,
@@ -143,12 +173,12 @@ func main() {
 		}
 	}()
 
-	if *enableTLS {
+	if cfg.Server.EnableTLS {
 		// For TLS, we need to use ListenAndServeTLS, but since we're using TLSConfig,
 		// we'll use ListenAndServe with the TLS config already set
 		// However, ListenAndServeTLS is simpler for this case
-		if *certFile != "" && *keyFile != "" {
-			if err := server.ListenAndServeTLS(*certFile, *keyFile); err != nil && err != http.ErrServerClosed {
+		if cfg.Server.CertFile != "" && cfg.Server.KeyFile != "" {
+			if err := server.ListenAndServeTLS(cfg.Server.CertFile, cfg.Server.KeyFile); err != nil && err != http.ErrServerClosed {
 				log.Fatalf("Server failed: %v", err)
 			}
 		} else {
@@ -165,9 +195,5 @@ func main() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server failed: %v", err)
 		}
-	}
-
-	if err != nil && err != http.ErrServerClosed {
-		log.Fatalf("Server failed: %v", err)
 	}
 }
