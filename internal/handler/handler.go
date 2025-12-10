@@ -13,30 +13,25 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// Handler provides HTTP handlers for the API.
 type Handler struct {
 	service     *service.Service
 	maxBodySize int64
 }
 
-// NewHandlerOptions holds options for creating a handler.
 type NewHandlerOptions struct {
 	MaxBodySize int64
 }
 
-// DefaultHandlerOptions returns default handler options.
 func DefaultHandlerOptions() NewHandlerOptions {
 	return NewHandlerOptions{
 		MaxBodySize: 10 << 20,
 	}
 }
 
-// NewHandler creates a new handler instance.
 func NewHandler(svc *service.Service) *Handler {
 	return NewHandlerWithOptions(svc, DefaultHandlerOptions())
 }
 
-// NewHandlerWithOptions creates a new handler instance with custom options.
 func NewHandlerWithOptions(svc *service.Service, opts NewHandlerOptions) *Handler {
 	return &Handler{
 		service:     svc,
@@ -44,7 +39,6 @@ func NewHandlerWithOptions(svc *service.Service, opts NewHandlerOptions) *Handle
 	}
 }
 
-// CreateOffer handles POST /offers
 func (h *Handler) CreateOffer(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, h.maxBodySize)
 
@@ -72,7 +66,6 @@ func (h *Handler) CreateOffer(w http.ResponseWriter, r *http.Request) {
 	h.respondJSON(w, http.StatusCreated, req)
 }
 
-// CreateTransactions handles POST /transactions
 func (h *Handler) CreateTransactions(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, h.maxBodySize)
 
@@ -105,7 +98,6 @@ func (h *Handler) CreateTransactions(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GetEligibleOffers handles GET /users/{user_id}/eligible-offers
 func (h *Handler) GetEligibleOffers(w http.ResponseWriter, r *http.Request) {
 	userID := chi.URLParam(r, "user_id")
 	userID = validation.SanitizeString(userID)
@@ -135,14 +127,12 @@ func (h *Handler) GetEligibleOffers(w http.ResponseWriter, r *http.Request) {
 	h.respondJSON(w, http.StatusOK, response)
 }
 
-// respondJSON sends a JSON response with the given status code.
 func (h *Handler) respondJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
 }
 
-// respondError sends an error response with the given status code and message.
 func (h *Handler) respondError(w http.ResponseWriter, status int, message string) {
 	h.respondJSON(w, status, models.ErrorResponse{Error: message})
 }

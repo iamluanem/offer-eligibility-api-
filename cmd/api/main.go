@@ -131,7 +131,6 @@ func main() {
 		MaxAge:           300,
 	}))
 
-	// Routes
 	r.Route("/offers", func(r chi.Router) {
 		r.Post("/", h.CreateOffer)
 	})
@@ -144,7 +143,6 @@ func main() {
 		r.Get("/{user_id}/eligible-offers", h.GetEligibleOffers)
 	})
 
-	// Health check endpoint
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
@@ -193,7 +191,6 @@ func main() {
 		TLSConfig: tlsConfig,
 	}
 
-	// Graceful shutdown
 	go func() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)

@@ -11,13 +11,11 @@ import (
 	"offer-eligibility-api/internal/validation"
 )
 
-// Service provides business logic for the offer eligibility API.
 type Service struct {
 	db     *database.DB
 	events *events.Manager
 }
 
-// NewService creates a new service instance.
 func NewService(db *database.DB) *Service {
 	return &Service{
 		db:     db,
@@ -25,12 +23,10 @@ func NewService(db *database.DB) *Service {
 	}
 }
 
-// SetEventManager sets the event manager for the service.
 func (s *Service) SetEventManager(em *events.Manager) {
 	s.events = em
 }
 
-// CreateOffer creates or updates an offer.
 func (s *Service) CreateOffer(ctx context.Context, offer models.Offer) error {
 	if err := validation.ValidateOffer(offer); err != nil {
 		return err
@@ -47,7 +43,6 @@ func (s *Service) CreateOffer(ctx context.Context, offer models.Offer) error {
 	return nil
 }
 
-// CreateTransactions ingests multiple transactions.
 func (s *Service) CreateTransactions(ctx context.Context, transactions []models.Transaction) (int, error) {
 	if len(transactions) == 0 {
 		return 0, fmt.Errorf("no transactions provided")
@@ -75,7 +70,6 @@ func (s *Service) CreateTransactions(ctx context.Context, transactions []models.
 	return count, nil
 }
 
-// GetEligibleOffers returns all offers that a user is eligible for at the given time.
 func (s *Service) GetEligibleOffers(ctx context.Context, userID string, now time.Time) (models.EligibleOffersResponse, error) {
 	if err := validation.ValidateUUID(userID, "user_id"); err != nil {
 		return models.EligibleOffersResponse{}, err

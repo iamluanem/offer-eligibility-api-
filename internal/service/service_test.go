@@ -35,7 +35,6 @@ func TestGetEligibleOffers_UserQualifies(t *testing.T) {
 	svc := NewService(db)
 	now := time.Date(2025, 10, 21, 10, 0, 0, 0, time.UTC)
 
-	// Create an active offer
 	offerID := uuid.New().String()
 	merchantID := uuid.New().String()
 	userID := uuid.New().String()
@@ -55,7 +54,6 @@ func TestGetEligibleOffers_UserQualifies(t *testing.T) {
 		t.Fatalf("Failed to create offer: %v", err)
 	}
 
-	// Create 3 matching transactions within the lookback window
 	transactions := []models.Transaction{
 		{
 			ID:          uuid.New().String(),
@@ -77,7 +75,7 @@ func TestGetEligibleOffers_UserQualifies(t *testing.T) {
 			ID:          uuid.New().String(),
 			UserID:      userID,
 			MerchantID:  uuid.New().String(),
-			MCC:         "5814", // Matches via MCC whitelist
+			MCC:         "5814",
 			AmountCents: 1500,
 			ApprovedAt:  time.Date(2025, 10, 18, 8, 0, 0, 0, time.UTC),
 		},
@@ -88,7 +86,6 @@ func TestGetEligibleOffers_UserQualifies(t *testing.T) {
 		t.Fatalf("Failed to create transactions: %v", err)
 	}
 
-	// Check eligibility
 	response, err := svc.GetEligibleOffers(context.Background(), userID, now)
 	if err != nil {
 		t.Fatalf("Failed to get eligible offers: %v", err)
@@ -114,7 +111,6 @@ func TestGetEligibleOffers_UserDoesNotQualify_NotEnoughTransactions(t *testing.T
 	merchantID := uuid.New().String()
 	userID := uuid.New().String()
 
-	// Create an active offer requiring 3 transactions
 	offer := models.Offer{
 		ID:           offerID,
 		MerchantID:   merchantID,
@@ -130,7 +126,6 @@ func TestGetEligibleOffers_UserDoesNotQualify_NotEnoughTransactions(t *testing.T
 		t.Fatalf("Failed to create offer: %v", err)
 	}
 
-	// Create only 2 matching transactions (need 3)
 	transactions := []models.Transaction{
 		{
 			ID:          uuid.New().String(),
@@ -155,7 +150,6 @@ func TestGetEligibleOffers_UserDoesNotQualify_NotEnoughTransactions(t *testing.T
 		t.Fatalf("Failed to create transactions: %v", err)
 	}
 
-	// Check eligibility
 	response, err := svc.GetEligibleOffers(context.Background(), userID, now)
 	if err != nil {
 		t.Fatalf("Failed to get eligible offers: %v", err)
@@ -177,12 +171,11 @@ func TestGetEligibleOffers_UserDoesNotQualify_OfferInactive(t *testing.T) {
 	merchantID := uuid.New().String()
 	userID := uuid.New().String()
 
-	// Create an inactive offer
 	offer := models.Offer{
 		ID:           offerID,
 		MerchantID:   merchantID,
 		MCCWhitelist: []string{"5812"},
-		Active:       false, // Inactive
+		Active:       false,
 		MinTxnCount:  1,
 		LookbackDays: 30,
 		StartsAt:     time.Date(2025, 10, 1, 0, 0, 0, 0, time.UTC),
@@ -193,7 +186,6 @@ func TestGetEligibleOffers_UserDoesNotQualify_OfferInactive(t *testing.T) {
 		t.Fatalf("Failed to create offer: %v", err)
 	}
 
-	// Create matching transactions
 	transactions := []models.Transaction{
 		{
 			ID:          uuid.New().String(),
@@ -210,7 +202,6 @@ func TestGetEligibleOffers_UserDoesNotQualify_OfferInactive(t *testing.T) {
 		t.Fatalf("Failed to create transactions: %v", err)
 	}
 
-	// Check eligibility
 	response, err := svc.GetEligibleOffers(context.Background(), userID, now)
 	if err != nil {
 		t.Fatalf("Failed to get eligible offers: %v", err)
@@ -232,14 +223,13 @@ func TestGetEligibleOffers_UserDoesNotQualify_OutOfTimeWindow(t *testing.T) {
 	merchantID := uuid.New().String()
 	userID := uuid.New().String()
 
-	// Create an active offer
 	offer := models.Offer{
 		ID:           offerID,
 		MerchantID:   merchantID,
 		MCCWhitelist: []string{"5812"},
 		Active:       true,
 		MinTxnCount:  1,
-		LookbackDays: 7, // Only 7 days lookback
+		LookbackDays: 7,
 		StartsAt:     time.Date(2025, 10, 1, 0, 0, 0, 0, time.UTC),
 		EndsAt:       time.Date(2025, 10, 31, 23, 59, 59, 0, time.UTC),
 	}
@@ -248,7 +238,6 @@ func TestGetEligibleOffers_UserDoesNotQualify_OutOfTimeWindow(t *testing.T) {
 		t.Fatalf("Failed to create offer: %v", err)
 	}
 
-	// Create a transaction that's too old (outside 7-day window)
 	transactions := []models.Transaction{
 		{
 			ID:          uuid.New().String(),
@@ -256,7 +245,7 @@ func TestGetEligibleOffers_UserDoesNotQualify_OutOfTimeWindow(t *testing.T) {
 			MerchantID:  merchantID,
 			MCC:         "5812",
 			AmountCents: 1000,
-			ApprovedAt:  time.Date(2025, 10, 10, 12, 0, 0, 0, time.UTC), // 11 days ago
+			ApprovedAt:  time.Date(2025, 10, 10, 12, 0, 0, 0, time.UTC),
 		},
 	}
 
@@ -265,7 +254,6 @@ func TestGetEligibleOffers_UserDoesNotQualify_OutOfTimeWindow(t *testing.T) {
 		t.Fatalf("Failed to create transactions: %v", err)
 	}
 
-	// Check eligibility
 	response, err := svc.GetEligibleOffers(context.Background(), userID, now)
 	if err != nil {
 		t.Fatalf("Failed to get eligible offers: %v", err)
@@ -289,7 +277,6 @@ func TestGetEligibleOffers_MultipleOffers(t *testing.T) {
 	merchant2ID := uuid.New().String()
 	userID := uuid.New().String()
 
-	// Create two active offers
 	offer1 := models.Offer{
 		ID:           offer1ID,
 		MerchantID:   merchant1ID,
@@ -320,7 +307,6 @@ func TestGetEligibleOffers_MultipleOffers(t *testing.T) {
 		t.Fatalf("Failed to create offer2: %v", err)
 	}
 
-	// Create transactions matching both offers
 	transactions := []models.Transaction{
 		{
 			ID:          uuid.New().String(),
@@ -342,7 +328,7 @@ func TestGetEligibleOffers_MultipleOffers(t *testing.T) {
 			ID:          uuid.New().String(),
 			UserID:      userID,
 			MerchantID:  uuid.New().String(),
-			MCC:         "5814", // Matches offer2 via MCC
+			MCC:         "5814",
 			AmountCents: 1500,
 			ApprovedAt:  time.Date(2025, 10, 18, 8, 0, 0, 0, time.UTC),
 		},
@@ -353,7 +339,6 @@ func TestGetEligibleOffers_MultipleOffers(t *testing.T) {
 		t.Fatalf("Failed to create transactions: %v", err)
 	}
 
-	// Check eligibility
 	response, err := svc.GetEligibleOffers(context.Background(), userID, now)
 	if err != nil {
 		t.Fatalf("Failed to get eligible offers: %v", err)
@@ -363,7 +348,6 @@ func TestGetEligibleOffers_MultipleOffers(t *testing.T) {
 		t.Fatalf("Expected 2 eligible offers, got %d", len(response.EligibleOffers))
 	}
 
-	// Verify both offers are present
 	foundOfferIDs := make(map[string]bool)
 	for _, eo := range response.EligibleOffers {
 		foundOfferIDs[eo.OfferID] = true

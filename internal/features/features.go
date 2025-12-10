@@ -5,14 +5,12 @@ import (
 	"sync"
 )
 
-// FeatureFlag represents a feature flag configuration.
 type FeatureFlag struct {
 	Name        string
 	Enabled     bool
 	Description string
 }
 
-// Manager manages feature flags.
 type Manager struct {
 	mu     sync.RWMutex
 	flags  map[string]*FeatureFlag
@@ -20,7 +18,6 @@ type Manager struct {
 	cancel context.CancelFunc
 }
 
-// NewManager creates a new feature flag manager.
 func NewManager() *Manager {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Manager{
@@ -30,7 +27,6 @@ func NewManager() *Manager {
 	}
 }
 
-// Register registers a new feature flag.
 func (m *Manager) Register(name string, enabled bool, description string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -42,20 +38,18 @@ func (m *Manager) Register(name string, enabled bool, description string) {
 	}
 }
 
-// IsEnabled checks if a feature flag is enabled.
 func (m *Manager) IsEnabled(name string) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	flag, exists := m.flags[name]
 	if !exists {
-		return false // Default to disabled if flag doesn't exist
+		return false
 	}
 
 	return flag.Enabled
 }
 
-// Enable enables a feature flag.
 func (m *Manager) Enable(name string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -65,7 +59,6 @@ func (m *Manager) Enable(name string) {
 	}
 }
 
-// Disable disables a feature flag.
 func (m *Manager) Disable(name string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -75,7 +68,6 @@ func (m *Manager) Disable(name string) {
 	}
 }
 
-// GetAll returns all feature flags.
 func (m *Manager) GetAll() map[string]*FeatureFlag {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -91,19 +83,13 @@ func (m *Manager) GetAll() map[string]*FeatureFlag {
 	return result
 }
 
-// Shutdown shuts down the feature flag manager.
 func (m *Manager) Shutdown() {
 	m.cancel()
 }
 
-// Predefined feature flag names
 const (
-	// FeatureCacheEnabled enables/disables caching layer
-	FeatureCacheEnabled = "cache_enabled"
-	// FeatureEventHooksEnabled enables/disables event-driven hooks
-	FeatureEventHooksEnabled = "event_hooks_enabled"
-	// FeatureAdvancedEligibility enables advanced eligibility calculations
+	FeatureCacheEnabled        = "cache_enabled"
+	FeatureEventHooksEnabled   = "event_hooks_enabled"
 	FeatureAdvancedEligibility = "advanced_eligibility"
-	// FeatureBatchProcessing enables batch transaction processing optimizations
-	FeatureBatchProcessing = "batch_processing"
+	FeatureBatchProcessing     = "batch_processing"
 )

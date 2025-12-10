@@ -8,7 +8,6 @@ import (
 	"strings"
 )
 
-// Config holds all application configuration.
 type Config struct {
 	Server    ServerConfig    `json:"server"`
 	Database  DatabaseConfig  `json:"database"`
@@ -19,7 +18,6 @@ type Config struct {
 	Cache     CacheConfig     `json:"cache"`
 }
 
-// ServerConfig holds server-related configuration.
 type ServerConfig struct {
 	Port      string `json:"port"`
 	Host      string `json:"host"`
@@ -28,35 +26,28 @@ type ServerConfig struct {
 	KeyFile   string `json:"key_file"`
 }
 
-// DatabaseConfig holds database-related configuration.
 type DatabaseConfig struct {
 	Path string `json:"path"`
 }
 
-// SecurityConfig holds security-related configuration.
 type SecurityConfig struct {
-	// Max request body size in bytes (default: 10MB)
-	MaxRequestBodySize int64 `json:"max_request_body_size"`
-	// Allowed CORS origins (comma-separated)
-	AllowedOrigins string `json:"allowed_origins"`
+	MaxRequestBodySize int64  `json:"max_request_body_size"`
+	AllowedOrigins     string `json:"allowed_origins"`
 }
 
-// RateLimitConfig holds rate limiting configuration.
 type RateLimitConfig struct {
 	Enabled bool `json:"enabled"`
 	Rate    int  `json:"rate"`
-	Window  int  `json:"window"` // in seconds
+	Window  int  `json:"window"`
 }
 
-// TracingConfig holds distributed tracing configuration.
 type TracingConfig struct {
 	Enabled     bool   `json:"enabled"`
-	Endpoint    string `json:"endpoint"`     // Jaeger endpoint
-	ServiceName string `json:"service_name"` // Service name for traces
-	Environment string `json:"environment"`  // Deployment environment
+	Endpoint    string `json:"endpoint"`
+	ServiceName string `json:"service_name"`
+	Environment string `json:"environment"`
 }
 
-// FeaturesConfig holds feature flags configuration.
 type FeaturesConfig struct {
 	CacheEnabled        bool `json:"cache_enabled"`
 	EventHooksEnabled   bool `json:"event_hooks_enabled"`
@@ -64,18 +55,15 @@ type FeaturesConfig struct {
 	BatchProcessing     bool `json:"batch_processing"`
 }
 
-// CacheConfig holds cache configuration.
 type CacheConfig struct {
 	Enabled  bool   `json:"enabled"`
-	Type     string `json:"type"`     // "redis" or "memory"
-	Addr     string `json:"addr"`     // Redis address (e.g., "localhost:6379")
-	Password string `json:"password"` // Redis password
-	DB       int    `json:"db"`       // Redis database number
-	TTL      int    `json:"ttl"`      // Default TTL in seconds
+	Type     string `json:"type"`
+	Addr     string `json:"addr"`
+	Password string `json:"password"`
+	DB       int    `json:"db"`
+	TTL      int    `json:"ttl"`
 }
 
-// LoadConfig loads configuration from environment variables and/or config file.
-// Environment variables take precedence over config file values.
 func LoadConfig(configFile string) (*Config, error) {
 	cfg := &Config{
 		Server: ServerConfig{
@@ -89,7 +77,7 @@ func LoadConfig(configFile string) (*Config, error) {
 			Path: getEnv("DATABASE_PATH", "./offer_eligibility.db"),
 		},
 		Security: SecurityConfig{
-			MaxRequestBodySize: getEnvInt64("MAX_REQUEST_BODY_SIZE", 10<<20), // 10MB default
+			MaxRequestBodySize: getEnvInt64("MAX_REQUEST_BODY_SIZE", 10<<20),
 			AllowedOrigins:     getEnv("ALLOWED_ORIGINS", "*"),
 		},
 		RateLimit: RateLimitConfig{
@@ -115,24 +103,21 @@ func LoadConfig(configFile string) (*Config, error) {
 			Addr:     getEnv("CACHE_ADDR", "localhost:6379"),
 			Password: getEnv("CACHE_PASSWORD", ""),
 			DB:       getEnvInt("CACHE_DB", 0),
-			TTL:      getEnvInt("CACHE_TTL", 300), // 5 minutes default
+			TTL:      getEnvInt("CACHE_TTL", 300),
 		},
 	}
 
-	// Load from config file if provided
 	if configFile != "" {
 		if err := loadFromFile(configFile, cfg); err != nil {
 			return nil, fmt.Errorf("failed to load config file: %w", err)
 		}
 	}
 
-	// Override with environment variables (they take precedence)
 	overrideFromEnv(cfg)
 
 	return cfg, nil
 }
 
-// loadFromFile loads configuration from a JSON file.
 func loadFromFile(path string, cfg *Config) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -142,7 +127,6 @@ func loadFromFile(path string, cfg *Config) error {
 	return json.Unmarshal(data, cfg)
 }
 
-// overrideFromEnv overrides configuration with environment variables.
 func overrideFromEnv(cfg *Config) {
 	if port := os.Getenv("SERVER_PORT"); port != "" {
 		cfg.Server.Port = port
@@ -231,7 +215,6 @@ func overrideFromEnv(cfg *Config) {
 	}
 }
 
-// getEnv gets an environment variable or returns the default value.
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
@@ -239,7 +222,6 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-// getEnvBool gets a boolean environment variable or returns the default value.
 func getEnvBool(key string, defaultValue bool) bool {
 	if value := os.Getenv(key); value != "" {
 		return strings.ToLower(value) == "true" || value == "1"
@@ -247,7 +229,6 @@ func getEnvBool(key string, defaultValue bool) bool {
 	return defaultValue
 }
 
-// getEnvInt gets an integer environment variable or returns the default value.
 func getEnvInt(key string, defaultValue int) int {
 	if value := os.Getenv(key); value != "" {
 		if i, err := strconv.Atoi(value); err == nil {
@@ -257,7 +238,6 @@ func getEnvInt(key string, defaultValue int) int {
 	return defaultValue
 }
 
-// getEnvInt64 gets an int64 environment variable or returns the default value.
 func getEnvInt64(key string, defaultValue int64) int64 {
 	if value := os.Getenv(key); value != "" {
 		if i, err := strconv.ParseInt(value, 10, 64); err == nil {
@@ -267,7 +247,6 @@ func getEnvInt64(key string, defaultValue int64) int64 {
 	return defaultValue
 }
 
-// Validate validates the configuration and returns any errors.
 func (c *Config) Validate() error {
 	if c.Server.Port == "" {
 		return fmt.Errorf("server port is required")
@@ -277,7 +256,7 @@ func (c *Config) Validate() error {
 	}
 	if c.Server.EnableTLS {
 		if c.Server.CertFile == "" || c.Server.KeyFile == "" {
-			// Self-signed cert will be generated, so this is OK
+
 		}
 	}
 	if c.RateLimit.Enabled {

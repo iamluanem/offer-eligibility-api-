@@ -12,12 +12,10 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// DB wraps the database connection and provides methods for data access.
 type DB struct {
 	conn *sql.DB
 }
 
-// NewDB creates a new database connection and initializes the schema.
 func NewDB(dbPath string) (*DB, error) {
 	conn, err := sql.Open("sqlite3", dbPath+"?_foreign_keys=1")
 	if err != nil {
@@ -34,12 +32,10 @@ func NewDB(dbPath string) (*DB, error) {
 	return db, nil
 }
 
-// Close closes the database connection.
 func (db *DB) Close() error {
 	return db.conn.Close()
 }
 
-// initSchema creates the necessary tables if they don't exist.
 func (db *DB) initSchema() error {
 	queries := []string{
 		`CREATE TABLE IF NOT EXISTS offers (
@@ -79,7 +75,6 @@ func (db *DB) initSchema() error {
 	return nil
 }
 
-// UpsertOffer creates or updates an offer.
 func (db *DB) UpsertOffer(offer models.Offer) error {
 	mccWhitelistJSON := serializeMCCWhitelist(offer.MCCWhitelist)
 
@@ -117,7 +112,6 @@ func (db *DB) UpsertOffer(offer models.Offer) error {
 	return nil
 }
 
-// InsertTransactions inserts multiple transactions in a single transaction.
 func (db *DB) InsertTransactions(transactions []models.Transaction) (int, error) {
 	if len(transactions) == 0 {
 		return 0, nil
@@ -160,7 +154,6 @@ func (db *DB) InsertTransactions(transactions []models.Transaction) (int, error)
 	return inserted, nil
 }
 
-// GetActiveOffers returns all active offers at the given time.
 func (db *DB) GetActiveOffers(now time.Time) ([]models.Offer, error) {
 	query := `SELECT id, merchant_id, mcc_whitelist, active, min_txn_count, 
 		lookback_days, starts_at, ends_at
@@ -217,8 +210,6 @@ func (db *DB) GetActiveOffers(now time.Time) ([]models.Offer, error) {
 	return offers, nil
 }
 
-// CountMatchingTransactions counts transactions that match an offer for a user
-// within the lookback window.
 func (db *DB) CountMatchingTransactions(
 	userID string,
 	offer models.Offer,
@@ -264,24 +255,20 @@ func serializeMCCWhitelist(mccList []string) string {
 	}
 	data, err := json.Marshal(mccList)
 	if err != nil {
-		// Fallback to comma-separated if JSON fails
 		return strings.Join(mccList, ",")
 	}
 	return string(data)
 }
 
-// deserializeMCCWhitelist converts a serialized MCC whitelist back to a slice.
 func deserializeMCCWhitelist(serialized string) []string {
 	if serialized == "" || serialized == "[]" {
 		return []string{}
 	}
 
-	// Try JSON parsing first
 	var result []string
 	if err := json.Unmarshal([]byte(serialized), &result); err == nil {
 		return result
 	}
 
-	// Fallback to comma-separated format for backward compatibility
 	return strings.Split(serialized, ",")
 }

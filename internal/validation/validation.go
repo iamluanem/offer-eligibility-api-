@@ -11,13 +11,10 @@ import (
 )
 
 var (
-	// uuidRegex validates UUID format (v4)
 	uuidRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
-	// mccRegex validates 4-digit MCC codes
-	mccRegex = regexp.MustCompile(`^\d{4}$`)
+	mccRegex  = regexp.MustCompile(`^\d{4}$`)
 )
 
-// ValidationError represents a validation error with field context.
 type ValidationError struct {
 	Field   string
 	Message string
@@ -27,7 +24,6 @@ func (e *ValidationError) Error() string {
 	return fmt.Sprintf("validation error on field '%s': %s", e.Field, e.Message)
 }
 
-// ValidateOffer validates an offer and returns any validation errors.
 func ValidateOffer(offer models.Offer) error {
 	if err := ValidateUUID(offer.ID, "id"); err != nil {
 		return err
@@ -83,7 +79,6 @@ func ValidateOffer(offer models.Offer) error {
 		}
 	}
 
-	// Validate time range is reasonable (not more than 2 years)
 	maxDuration := 2 * 365 * 24 * time.Hour
 	if offer.EndsAt.Sub(offer.StartsAt) > maxDuration {
 		return &ValidationError{
@@ -95,7 +90,6 @@ func ValidateOffer(offer models.Offer) error {
 	return nil
 }
 
-// ValidateTransaction validates a transaction and returns any validation errors.
 func ValidateTransaction(txn models.Transaction) error {
 	if err := ValidateUUID(txn.ID, "id"); err != nil {
 		return err
@@ -120,7 +114,6 @@ func ValidateTransaction(txn models.Transaction) error {
 		}
 	}
 
-	// Reasonable upper limit for transaction amount (1 million dollars)
 	maxAmount := int64(100_000_000)
 	if txn.AmountCents > maxAmount {
 		return &ValidationError{
@@ -136,7 +129,6 @@ func ValidateTransaction(txn models.Transaction) error {
 		}
 	}
 
-	// Validate timestamp is not too far in the future (allow 1 hour buffer for clock skew)
 	maxFutureTime := time.Now().Add(1 * time.Hour)
 	if txn.ApprovedAt.After(maxFutureTime) {
 		return &ValidationError{
@@ -145,7 +137,6 @@ func ValidateTransaction(txn models.Transaction) error {
 		}
 	}
 
-	// Validate timestamp is not too far in the past (10 years)
 	maxPastTime := time.Now().AddDate(-10, 0, 0)
 	if txn.ApprovedAt.Before(maxPastTime) {
 		return &ValidationError{
@@ -157,9 +148,7 @@ func ValidateTransaction(txn models.Transaction) error {
 	return nil
 }
 
-// SanitizeString removes potentially dangerous characters and trims whitespace.
 func SanitizeString(s string) string {
-	// Remove null bytes and control characters
 	s = strings.Map(func(r rune) rune {
 		if unicode.IsControl(r) && r != '\n' && r != '\r' && r != '\t' {
 			return -1
@@ -170,7 +159,6 @@ func SanitizeString(s string) string {
 	return strings.TrimSpace(s)
 }
 
-// ValidateUUID validates that a string is a valid UUID v4.
 func ValidateUUID(id, fieldName string) error {
 	if id == "" {
 		return &ValidationError{
@@ -179,7 +167,6 @@ func ValidateUUID(id, fieldName string) error {
 		}
 	}
 
-	// Sanitize before validation
 	id = SanitizeString(id)
 
 	if !uuidRegex.MatchString(strings.ToLower(id)) {
@@ -192,7 +179,6 @@ func ValidateUUID(id, fieldName string) error {
 	return nil
 }
 
-// validateMCC validates that a string is a valid 4-digit MCC code.
 func validateMCC(mcc string) error {
 	if mcc == "" {
 		return &ValidationError{
@@ -213,10 +199,9 @@ func validateMCC(mcc string) error {
 	return nil
 }
 
-// validateMCCWhitelist validates that all MCC codes in the whitelist are valid.
 func validateMCCWhitelist(mccList []string) error {
 	if len(mccList) == 0 {
-		return nil // Empty whitelist is valid
+		return nil
 	}
 
 	if len(mccList) > 100 {
@@ -235,7 +220,6 @@ func validateMCCWhitelist(mccList []string) error {
 			}
 		}
 
-		// Check for duplicates
 		if seen[mcc] {
 			return &ValidationError{
 				Field:   "mcc_whitelist",
@@ -248,7 +232,6 @@ func validateMCCWhitelist(mccList []string) error {
 	return nil
 }
 
-// ValidateTimeString validates that a string is a valid RFC3339 timestamp.
 func ValidateTimeString(timeStr string) (time.Time, error) {
 	if timeStr == "" {
 		return time.Time{}, &ValidationError{

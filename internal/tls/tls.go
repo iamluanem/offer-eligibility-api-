@@ -14,16 +14,12 @@ import (
 	"time"
 )
 
-// Config holds TLS configuration.
 type Config struct {
 	CertFile string
 	KeyFile  string
-	// If both CertFile and KeyFile are empty, a self-signed cert will be generated
 }
 
-// LoadTLSConfig loads TLS configuration from files or generates a self-signed certificate.
 func LoadTLSConfig(cfg Config) (*tls.Config, error) {
-	// If certificate files are provided, use them
 	if cfg.CertFile != "" && cfg.KeyFile != "" {
 		cert, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
 		if err != nil {
@@ -45,19 +41,15 @@ func LoadTLSConfig(cfg Config) (*tls.Config, error) {
 		}, nil
 	}
 
-	// Generate self-signed certificate for development
 	return generateSelfSignedCert()
 }
 
-// generateSelfSignedCert generates a self-signed certificate for development use.
 func generateSelfSignedCert() (*tls.Config, error) {
-	// Generate private key
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate private key: %w", err)
 	}
 
-	// Create certificate template
 	template := x509.Certificate{
 		SerialNumber: big.NewInt(1),
 		Subject: pkix.Name{
@@ -69,23 +61,20 @@ func generateSelfSignedCert() (*tls.Config, error) {
 			PostalCode:    []string{""},
 		},
 		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(365 * 24 * time.Hour), // Valid for 1 year
+		NotAfter:              time.Now().Add(365 * 24 * time.Hour),
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
 	}
 
-	// Add localhost and 127.0.0.1 to DNS names and IP addresses
 	template.DNSNames = []string{"localhost", "127.0.0.1"}
 	template.IPAddresses = []net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback}
 
-	// Create certificate
 	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create certificate: %w", err)
 	}
 
-	// Create TLS certificate
 	cert := tls.Certificate{
 		Certificate: [][]byte{certDER},
 		PrivateKey:  priv,
@@ -106,7 +95,6 @@ func generateSelfSignedCert() (*tls.Config, error) {
 	}, nil
 }
 
-// SaveSelfSignedCert saves a self-signed certificate to files (for inspection/debugging).
 func SaveSelfSignedCert(certFile, keyFile string) error {
 	tlsConfig, err := generateSelfSignedCert()
 	if err != nil {
@@ -119,7 +107,6 @@ func SaveSelfSignedCert(certFile, keyFile string) error {
 
 	cert := tlsConfig.Certificates[0]
 
-	// Save certificate
 	certOut, err := os.Create(certFile)
 	if err != nil {
 		return fmt.Errorf("failed to open %s for writing: %w", certFile, err)
@@ -133,7 +120,6 @@ func SaveSelfSignedCert(certFile, keyFile string) error {
 		return fmt.Errorf("failed to write certificate: %w", err)
 	}
 
-	// Save private key
 	keyOut, err := os.OpenFile(keyFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to open %s for writing: %w", keyFile, err)
