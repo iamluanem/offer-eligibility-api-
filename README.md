@@ -271,9 +271,9 @@ Expected response: JSON with eligible offers for the user
 
 **Note:** Replace `localhost:8080` with your server address and port if different. The UUIDs in the examples are valid UUID v4 format and can be reused for testing.
 
-## Running Tests
+## Running Unit Tests
 
-Run all tests:
+Run all unit tests:
 
 ```bash
 go test ./...
@@ -303,6 +303,8 @@ Generate coverage report:
 go test -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out
 ```
+
+**Note:** Unit tests verify the eligibility logic with isolated test databases. For end-to-end API testing, use the test script described in the Quick Start Testing section above.
 
 ## Storage Choice: SQLite
 
