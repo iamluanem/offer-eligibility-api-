@@ -58,6 +58,14 @@ func main() {
 	// Initialize service
 	svc := service.NewService(db)
 
+	// Initialize feature flags
+	featureManager := features.NewManager()
+	featureManager.Register(features.FeatureCacheEnabled, cfg.Features.CacheEnabled, "Enable caching layer")
+	featureManager.Register(features.FeatureEventHooksEnabled, cfg.Features.EventHooksEnabled, "Enable event-driven hooks")
+	featureManager.Register(features.FeatureAdvancedEligibility, cfg.Features.AdvancedEligibility, "Enable advanced eligibility calculations")
+	featureManager.Register(features.FeatureBatchProcessing, cfg.Features.BatchProcessing, "Enable batch processing optimizations")
+	defer featureManager.Shutdown()
+
 	// Initialize tracing (if enabled)
 	if cfg.Tracing.Enabled {
 		_, err := tracing.InitTracing(tracing.Config{

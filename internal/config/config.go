@@ -54,6 +54,14 @@ type TracingConfig struct {
 	Environment string `json:"environment"`  // Deployment environment
 }
 
+// FeaturesConfig holds feature flags configuration.
+type FeaturesConfig struct {
+	CacheEnabled          bool `json:"cache_enabled"`
+	EventHooksEnabled     bool `json:"event_hooks_enabled"`
+	AdvancedEligibility   bool `json:"advanced_eligibility"`
+	BatchProcessing       bool `json:"batch_processing"`
+}
+
 // LoadConfig loads configuration from environment variables and/or config file.
 // Environment variables take precedence over config file values.
 func LoadConfig(configFile string) (*Config, error) {
@@ -82,6 +90,12 @@ func LoadConfig(configFile string) (*Config, error) {
 			Endpoint:    getEnv("TRACING_ENDPOINT", "http://localhost:14268/api/traces"),
 			ServiceName: getEnv("TRACING_SERVICE_NAME", "offer-eligibility-api"),
 			Environment: getEnv("TRACING_ENVIRONMENT", "development"),
+		},
+		Features: FeaturesConfig{
+			CacheEnabled:        getEnvBool("FEATURE_CACHE_ENABLED", false),
+			EventHooksEnabled:    getEnvBool("FEATURE_EVENT_HOOKS_ENABLED", false),
+			AdvancedEligibility: getEnvBool("FEATURE_ADVANCED_ELIGIBILITY", false),
+			BatchProcessing:      getEnvBool("FEATURE_BATCH_PROCESSING", false),
 		},
 	}
 
@@ -160,6 +174,18 @@ func overrideFromEnv(cfg *Config) {
 	}
 	if environment := os.Getenv("TRACING_ENVIRONMENT"); environment != "" {
 		cfg.Tracing.Environment = environment
+	}
+	if enabled := os.Getenv("FEATURE_CACHE_ENABLED"); enabled != "" {
+		cfg.Features.CacheEnabled = enabled == "true" || enabled == "1"
+	}
+	if enabled := os.Getenv("FEATURE_EVENT_HOOKS_ENABLED"); enabled != "" {
+		cfg.Features.EventHooksEnabled = enabled == "true" || enabled == "1"
+	}
+	if enabled := os.Getenv("FEATURE_ADVANCED_ELIGIBILITY"); enabled != "" {
+		cfg.Features.AdvancedEligibility = enabled == "true" || enabled == "1"
+	}
+	if enabled := os.Getenv("FEATURE_BATCH_PROCESSING"); enabled != "" {
+		cfg.Features.BatchProcessing = enabled == "true" || enabled == "1"
 	}
 }
 
