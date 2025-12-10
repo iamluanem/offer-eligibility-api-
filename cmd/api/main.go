@@ -14,6 +14,7 @@ import (
 	"context"
 	"offer-eligibility-api/internal/config"
 	"offer-eligibility-api/internal/database"
+	"offer-eligibility-api/internal/events"
 	"offer-eligibility-api/internal/features"
 	"offer-eligibility-api/internal/handler"
 	"offer-eligibility-api/internal/middleware"
@@ -88,6 +89,20 @@ func main() {
 	featureManager.Register(features.FeatureAdvancedEligibility, cfg.Features.AdvancedEligibility, "Enable advanced eligibility calculations")
 	featureManager.Register(features.FeatureBatchProcessing, cfg.Features.BatchProcessing, "Enable batch processing optimizations")
 	defer featureManager.Shutdown()
+
+	// Initialize event manager (if enabled)
+	var eventManager *events.Manager
+	if cfg.Features.EventHooksEnabled {
+		eventManager = events.NewManager(true)
+		defer eventManager.Shutdown()
+		log.Println("Event-driven hooks: enabled")
+	}
+
+	// Initialize service
+	svc := service.NewService(db)
+	if eventManager != nil {
+		svc.SetEventManager(eventManager)
+	}
 
 	// Initialize tracing (if enabled)
 	if cfg.Tracing.Enabled {
