@@ -239,6 +239,8 @@ If you prefer to test manually, open a **new terminal** and follow these steps:
 
 ##### 1. Health Check
 
+Make sure the server is running (see Step 1 above), then:
+
 ```bash
 curl http://localhost:8080/health
 ```
