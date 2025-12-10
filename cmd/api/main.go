@@ -57,31 +57,6 @@ func main() {
 	}
 	defer db.Close()
 
-	// Initialize event manager (if enabled)
-	var eventManager *events.Manager
-	if cfg.Features.EventHooksEnabled {
-		eventManager = events.NewManager(true)
-		defer eventManager.Shutdown()
-		log.Println("Event-driven hooks: enabled")
-	}
-
-	// Initialize event manager (if enabled)
-	var eventManager *events.Manager
-	if cfg.Features.EventHooksEnabled {
-		eventManager = events.NewManager(true)
-		defer eventManager.Shutdown()
-		log.Println("Event-driven hooks: enabled")
-	}
-
-	// Initialize service
-	svc := service.NewService(db)
-	if eventManager != nil {
-		svc.SetEventManager(eventManager)
-	}
-	if eventManager != nil {
-		svc.SetEventManager(eventManager)
-	}
-
 	// Initialize feature flags
 	featureManager := features.NewManager()
 	featureManager.Register(features.FeatureCacheEnabled, cfg.Features.CacheEnabled, "Enable caching layer")
