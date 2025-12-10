@@ -268,12 +268,14 @@ Expected response: The created offer object (JSON)
 
 ##### 3. Create Transactions
 
+⚠️ **Before running this command**: If you've tested before, change the `id` value to avoid duplicate errors. Simply modify any character in the UUID (e.g., change the last `d` to `e`).
+
 ```bash
 curl -X POST http://localhost:8080/transactions \
   -H "Content-Type: application/json" \
   -d '{
     "transactions": [{
-      "id": "510dbcad-af66-4c66-b3dc-a4a0c8fd5c1d",
+      "id": "510dbcad-af66-4c66-b3dc-a4a0c8fd5c1e",
       "user_id": "d5e5c023-f9b1-4eac-b9bd-f538ccca040d",
       "merchant_id": "0b29823e-667e-4bf5-84d7-8eb39973a401",
       "mcc": "5812",
@@ -285,11 +287,10 @@ curl -X POST http://localhost:8080/transactions \
 
 Expected response: `{"inserted": 1}`
 
-**Important:** 
-- Transaction IDs must be unique. If you get a "UNIQUE constraint failed" error, the transaction ID already exists in the database.
-- To test multiple times, change the `id` field to a different UUID (you can modify any character in the UUID).
-- Alternatively, delete the database file (`rm ./offer_eligibility.db`) and restart the server to start fresh.
-- The automated test script (`./test-api.sh`) handles this automatically by generating unique UUIDs.
+**If you get "UNIQUE constraint failed" error:**
+- The transaction ID already exists. Change the `id` field (modify any character in the UUID).
+- Or delete the database: `rm ./offer_eligibility.db` and restart the server.
+- Or use the automated test script: `./test-api.sh` (handles UUIDs automatically).
 
 ##### 4. Check Eligible Offers
 
