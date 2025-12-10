@@ -310,11 +310,11 @@ func TestGetEligibleOffers_MultipleOffers(t *testing.T) {
 		EndsAt:       time.Date(2025, 10, 31, 23, 59, 59, 0, time.UTC),
 	}
 
-	if err := svc.CreateOffer(offer1); err != nil {
+	if err := svc.CreateOffer(context.Background(), offer1); err != nil {
 		t.Fatalf("Failed to create offer1: %v", err)
 	}
 
-	if err := svc.CreateOffer(offer2); err != nil {
+	if err := svc.CreateOffer(context.Background(), offer2); err != nil {
 		t.Fatalf("Failed to create offer2: %v", err)
 	}
 
