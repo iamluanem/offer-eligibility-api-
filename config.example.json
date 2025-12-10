@@ -1,0 +1,42 @@
+{
+  "server": {
+    "port": "3000",
+    "host": "",
+    "enable_tls": false,
+    "cert_file": "",
+    "key_file": ""
+  },
+  "database": {
+    "path": "./custom_path.db"
+  },
+  "security": {
+    "max_request_body_size": 10485760,
+    "allowed_origins": "*"
+  },
+  "rate_limit": {
+    "enabled": true,
+    "rate": 100,
+    "window": 60
+  },
+  "tracing": {
+    "enabled": false,
+    "endpoint": "http://localhost:14268/api/traces",
+    "service_name": "offer-eligibility-api",
+    "environment": "development"
+  },
+  "features": {
+    "cache_enabled": false,
+    "event_hooks_enabled": false,
+    "advanced_eligibility": false,
+    "batch_processing": false
+  },
+  "cache": {
+    "enabled": false,
+    "type": "memory",
+    "addr": "localhost:6379",
+    "password": "",
+    "db": 0,
+    "ttl": 300
+  }
+}
+
