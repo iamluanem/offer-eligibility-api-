@@ -10,22 +10,22 @@ import (
 
 // Config holds all application configuration.
 type Config struct {
-	Server   ServerConfig   `json:"server"`
-	Database DatabaseConfig `json:"database"`
-	Security SecurityConfig `json:"security"`
+	Server    ServerConfig    `json:"server"`
+	Database  DatabaseConfig  `json:"database"`
+	Security  SecurityConfig  `json:"security"`
 	RateLimit RateLimitConfig `json:"rate_limit"`
-	Tracing  TracingConfig  `json:"tracing"`
-	Features FeaturesConfig `json:"features"`
-	Cache    CacheConfig    `json:"cache"`
+	Tracing   TracingConfig   `json:"tracing"`
+	Features  FeaturesConfig  `json:"features"`
+	Cache     CacheConfig     `json:"cache"`
 }
 
 // ServerConfig holds server-related configuration.
 type ServerConfig struct {
-	Port     string `json:"port"`
-	Host     string `json:"host"`
-	EnableTLS bool  `json:"enable_tls"`
-	CertFile string `json:"cert_file"`
-	KeyFile  string `json:"key_file"`
+	Port      string `json:"port"`
+	Host      string `json:"host"`
+	EnableTLS bool   `json:"enable_tls"`
+	CertFile  string `json:"cert_file"`
+	KeyFile   string `json:"key_file"`
 }
 
 // DatabaseConfig holds database-related configuration.
@@ -58,20 +58,20 @@ type TracingConfig struct {
 
 // FeaturesConfig holds feature flags configuration.
 type FeaturesConfig struct {
-	CacheEnabled          bool `json:"cache_enabled"`
-	EventHooksEnabled     bool `json:"event_hooks_enabled"`
-	AdvancedEligibility   bool `json:"advanced_eligibility"`
-	BatchProcessing       bool `json:"batch_processing"`
+	CacheEnabled        bool `json:"cache_enabled"`
+	EventHooksEnabled   bool `json:"event_hooks_enabled"`
+	AdvancedEligibility bool `json:"advanced_eligibility"`
+	BatchProcessing     bool `json:"batch_processing"`
 }
 
 // CacheConfig holds cache configuration.
 type CacheConfig struct {
 	Enabled  bool   `json:"enabled"`
-	Type     string `json:"type"`      // "redis" or "memory"
-	Addr     string `json:"addr"`      // Redis address (e.g., "localhost:6379")
-	Password string `json:"password"`  // Redis password
-	DB       int    `json:"db"`        // Redis database number
-	TTL      int    `json:"ttl"`       // Default TTL in seconds
+	Type     string `json:"type"`     // "redis" or "memory"
+	Addr     string `json:"addr"`     // Redis address (e.g., "localhost:6379")
+	Password string `json:"password"` // Redis password
+	DB       int    `json:"db"`       // Redis database number
+	TTL      int    `json:"ttl"`      // Default TTL in seconds
 }
 
 // LoadConfig loads configuration from environment variables and/or config file.
@@ -79,11 +79,11 @@ type CacheConfig struct {
 func LoadConfig(configFile string) (*Config, error) {
 	cfg := &Config{
 		Server: ServerConfig{
-			Port:     getEnv("SERVER_PORT", "8080"),
-			Host:     getEnv("SERVER_HOST", ""),
+			Port:      getEnv("SERVER_PORT", "8080"),
+			Host:      getEnv("SERVER_HOST", ""),
 			EnableTLS: getEnvBool("SERVER_ENABLE_TLS", false),
-			CertFile: getEnv("SERVER_CERT_FILE", ""),
-			KeyFile:  getEnv("SERVER_KEY_FILE", ""),
+			CertFile:  getEnv("SERVER_CERT_FILE", ""),
+			KeyFile:   getEnv("SERVER_KEY_FILE", ""),
 		},
 		Database: DatabaseConfig{
 			Path: getEnv("DATABASE_PATH", "./offer_eligibility.db"),
@@ -105,9 +105,9 @@ func LoadConfig(configFile string) (*Config, error) {
 		},
 		Features: FeaturesConfig{
 			CacheEnabled:        getEnvBool("FEATURE_CACHE_ENABLED", false),
-			EventHooksEnabled:    getEnvBool("FEATURE_EVENT_HOOKS_ENABLED", false),
+			EventHooksEnabled:   getEnvBool("FEATURE_EVENT_HOOKS_ENABLED", false),
 			AdvancedEligibility: getEnvBool("FEATURE_ADVANCED_ELIGIBILITY", false),
-			BatchProcessing:      getEnvBool("FEATURE_BATCH_PROCESSING", false),
+			BatchProcessing:     getEnvBool("FEATURE_BATCH_PROCESSING", false),
 		},
 		Cache: CacheConfig{
 			Enabled:  getEnvBool("CACHE_ENABLED", false),
@@ -290,4 +290,3 @@ func (c *Config) Validate() error {
 	}
 	return nil
 }
-

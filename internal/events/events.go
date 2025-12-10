@@ -136,4 +136,3 @@ func (m *Manager) Shutdown() {
 	m.enabled = false
 	m.handlers = make(map[EventType][]Handler)
 }
-

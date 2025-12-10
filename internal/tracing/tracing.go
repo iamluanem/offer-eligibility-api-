@@ -9,14 +9,14 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/semconv/v1.21.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
 // Config holds tracing configuration.
 type Config struct {
-	Enabled  bool
-	Endpoint string // Jaeger endpoint (e.g., "http://localhost:14268/api/traces")
+	Enabled     bool
+	Endpoint    string // Jaeger endpoint (e.g., "http://localhost:14268/api/traces")
 	ServiceName string
 	Environment string
 }
@@ -108,4 +108,3 @@ func Shutdown(ctx context.Context) error {
 	}
 	return nil
 }
-

@@ -7,8 +7,9 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
 	"offer-eligibility-api/internal/models"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // DB wraps the database connection and provides methods for data access.
@@ -81,7 +82,7 @@ func (db *DB) initSchema() error {
 // UpsertOffer creates or updates an offer.
 func (db *DB) UpsertOffer(offer models.Offer) error {
 	mccWhitelistJSON := serializeMCCWhitelist(offer.MCCWhitelist)
-	
+
 	query := `INSERT INTO offers (
 		id, merchant_id, mcc_whitelist, active, min_txn_count, 
 		lookback_days, starts_at, ends_at, updated_at
@@ -276,14 +277,13 @@ func deserializeMCCWhitelist(serialized string) []string {
 	if serialized == "" || serialized == "[]" {
 		return []string{}
 	}
-	
+
 	// Try JSON parsing first
 	var result []string
 	if err := json.Unmarshal([]byte(serialized), &result); err == nil {
 		return result
 	}
-	
+
 	// Fallback to comma-separated format for backward compatibility
 	return strings.Split(serialized, ",")
 }
-

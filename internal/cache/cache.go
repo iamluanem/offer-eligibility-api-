@@ -169,4 +169,3 @@ func SetJSON(ctx context.Context, cache Cache, key string, value interface{}, tt
 	}
 	return cache.Set(ctx, key, data, ttl)
 }
-

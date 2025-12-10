@@ -107,4 +107,3 @@ const (
 	// FeatureBatchProcessing enables batch transaction processing optimizations
 	FeatureBatchProcessing = "batch_processing"
 )
-

@@ -6,16 +6,17 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"offer-eligibility-api/internal/models"
 	"offer-eligibility-api/internal/service"
 	"offer-eligibility-api/internal/validation"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // Handler provides HTTP handlers for the API.
 type Handler struct {
-	service         *service.Service
-	maxBodySize     int64
+	service     *service.Service
+	maxBodySize int64
 }
 
 // NewHandlerOptions holds options for creating a handler.
@@ -112,7 +113,7 @@ func (h *Handler) CreateTransactions(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetEligibleOffers(w http.ResponseWriter, r *http.Request) {
 	userID := chi.URLParam(r, "user_id")
 	userID = validation.SanitizeString(userID)
-	
+
 	if userID == "" {
 		h.respondError(w, http.StatusBadRequest, "user_id is required")
 		return
@@ -150,4 +151,3 @@ func (h *Handler) respondJSON(w http.ResponseWriter, status int, data interface{
 func (h *Handler) respondError(w http.ResponseWriter, status int, message string) {
 	h.respondJSON(w, status, models.ErrorResponse{Error: message})
 }
-

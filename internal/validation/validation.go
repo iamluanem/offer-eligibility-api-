@@ -267,4 +267,3 @@ func ValidateTimeString(timeStr string) (time.Time, error) {
 
 	return t, nil
 }
-

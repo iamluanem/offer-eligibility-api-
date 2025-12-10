@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"offer-eligibility-api/internal/database"
 	"offer-eligibility-api/internal/models"
+
+	"github.com/google/uuid"
 )
 
 func setupTestDB(t *testing.T) (*database.DB, func()) {
@@ -37,7 +38,7 @@ func TestGetEligibleOffers_UserQualifies(t *testing.T) {
 	offerID := uuid.New().String()
 	merchantID := uuid.New().String()
 	userID := uuid.New().String()
-	
+
 	offer := models.Offer{
 		ID:           offerID,
 		MerchantID:   merchantID,
@@ -374,4 +375,3 @@ func TestGetEligibleOffers_MultipleOffers(t *testing.T) {
 		t.Error("Expected offer2 to be eligible")
 	}
 }
-

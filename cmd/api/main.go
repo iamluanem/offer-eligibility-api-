@@ -9,9 +9,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"crypto/tls"
-	"strings"
 	"context"
+	"crypto/tls"
 	"offer-eligibility-api/internal/config"
 	"offer-eligibility-api/internal/database"
 	"offer-eligibility-api/internal/events"
@@ -21,6 +20,7 @@ import (
 	"offer-eligibility-api/internal/service"
 	tlsconfig "offer-eligibility-api/internal/tls"
 	tracing "offer-eligibility-api/internal/tracing"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -119,23 +119,23 @@ func main() {
 	r.Use(chimw.RealIP)
 	r.Use(chimw.Logger)
 	r.Use(chimw.Recoverer)
-	
+
 	// Tracing middleware (if enabled)
 	if cfg.Tracing.Enabled {
 		r.Use(middleware.TracingMiddleware())
 	}
-	
+
 	// Rate limiting middleware (if enabled)
 	if cfg.RateLimit.Enabled && rateLimiter != nil {
 		r.Use(middleware.RateLimitMiddleware(rateLimiter))
 	}
-	
+
 	// CORS configuration
 	allowedOrigins := strings.Split(cfg.Security.AllowedOrigins, ",")
 	for i := range allowedOrigins {
 		allowedOrigins[i] = strings.TrimSpace(allowedOrigins[i])
 	}
-	
+
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},

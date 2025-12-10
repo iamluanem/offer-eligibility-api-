@@ -122,5 +122,3 @@ func (s *Service) GetEligibleOffers(ctx context.Context, userID string, now time
 
 	return response, nil
 }
-
-
