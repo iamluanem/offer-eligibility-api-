@@ -1,35 +1,55 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"offer-eligibility-api/internal/database"
+	"offer-eligibility-api/internal/events"
 	"offer-eligibility-api/internal/models"
 	"offer-eligibility-api/internal/validation"
 )
 
 // Service provides business logic for the offer eligibility API.
 type Service struct {
-	db *database.DB
+	db     *database.DB
+	events *events.Manager
 }
 
 // NewService creates a new service instance.
 func NewService(db *database.DB) *Service {
-	return &Service{db: db}
+	return &Service{
+		db:     db,
+		events: nil, // Will be set via SetEventManager if needed
+	}
+}
+
+// SetEventManager sets the event manager for the service.
+func (s *Service) SetEventManager(em *events.Manager) {
+	s.events = em
 }
 
 // CreateOffer creates or updates an offer.
-func (s *Service) CreateOffer(offer models.Offer) error {
+func (s *Service) CreateOffer(ctx context.Context, offer models.Offer) error {
 	if err := validation.ValidateOffer(offer); err != nil {
 		return err
 	}
 
-	return s.db.UpsertOffer(offer)
+	if err := s.db.UpsertOffer(offer); err != nil {
+		return err
+	}
+
+	// Publish event
+	if s.events != nil {
+		s.events.PublishOfferCreated(ctx, offer)
+	}
+
+	return nil
 }
 
 // CreateTransactions ingests multiple transactions.
-func (s *Service) CreateTransactions(transactions []models.Transaction) (int, error) {
+func (s *Service) CreateTransactions(ctx context.Context, transactions []models.Transaction) (int, error) {
 	if len(transactions) == 0 {
 		return 0, fmt.Errorf("no transactions provided")
 	}
@@ -45,11 +65,21 @@ func (s *Service) CreateTransactions(transactions []models.Transaction) (int, er
 		}
 	}
 
-	return s.db.InsertTransactions(transactions)
+	count, err := s.db.InsertTransactions(transactions)
+	if err != nil {
+		return 0, err
+	}
+
+	// Publish event
+	if s.events != nil {
+		s.events.PublishTransactionCreated(ctx, transactions, count)
+	}
+
+	return count, nil
 }
 
 // GetEligibleOffers returns all offers that a user is eligible for at the given time.
-func (s *Service) GetEligibleOffers(userID string, now time.Time) (models.EligibleOffersResponse, error) {
+func (s *Service) GetEligibleOffers(ctx context.Context, userID string, now time.Time) (models.EligibleOffersResponse, error) {
 	if err := validation.ValidateUUID(userID, "user_id"); err != nil {
 		return models.EligibleOffersResponse{}, err
 	}
@@ -80,10 +110,17 @@ func (s *Service) GetEligibleOffers(userID string, now time.Time) (models.Eligib
 		}
 	}
 
-	return models.EligibleOffersResponse{
+	response := models.EligibleOffersResponse{
 		UserID:         userID,
 		EligibleOffers: eligibleOffers,
-	}, nil
+	}
+
+	// Publish event
+	if s.events != nil {
+		s.events.PublishEligibilityChecked(ctx, userID, eligibleOffers)
+	}
+
+	return response, nil
 }
 
 

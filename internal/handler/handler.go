@@ -97,7 +97,7 @@ func (h *Handler) CreateTransactions(w http.ResponseWriter, r *http.Request) {
 		txn.MCC = validation.SanitizeString(txn.MCC)
 	}
 
-	inserted, err := h.service.CreateTransactions(req.Transactions)
+	inserted, err := h.service.CreateTransactions(r.Context(), req.Transactions)
 	if err != nil {
 		h.respondError(w, http.StatusBadRequest, err.Error())
 		return
@@ -130,7 +130,7 @@ func (h *Handler) GetEligibleOffers(w http.ResponseWriter, r *http.Request) {
 		now = parsed.UTC()
 	}
 
-	response, err := h.service.GetEligibleOffers(userID, now)
+	response, err := h.service.GetEligibleOffers(r.Context(), userID, now)
 	if err != nil {
 		h.respondError(w, http.StatusBadRequest, err.Error())
 		return
