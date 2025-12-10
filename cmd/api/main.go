@@ -11,12 +11,14 @@ import (
 
 	"crypto/tls"
 	"strings"
+	"context"
 	"offer-eligibility-api/internal/config"
 	"offer-eligibility-api/internal/database"
 	"offer-eligibility-api/internal/handler"
 	"offer-eligibility-api/internal/middleware"
 	"offer-eligibility-api/internal/service"
 	tlsconfig "offer-eligibility-api/internal/tls"
+	tracing "offer-eligibility-api/internal/tracing"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -56,6 +58,26 @@ func main() {
 	// Initialize service
 	svc := service.NewService(db)
 
+	// Initialize tracing (if enabled)
+	if cfg.Tracing.Enabled {
+		_, err := tracing.InitTracing(tracing.Config{
+			Enabled:     cfg.Tracing.Enabled,
+			Endpoint:    cfg.Tracing.Endpoint,
+			ServiceName: cfg.Tracing.ServiceName,
+			Environment: cfg.Tracing.Environment,
+		})
+		if err != nil {
+			log.Printf("WARNING: Failed to initialize tracing: %v", err)
+		} else {
+			log.Printf("Tracing enabled: %s -> %s", cfg.Tracing.ServiceName, cfg.Tracing.Endpoint)
+			defer func() {
+				if err := tracing.Shutdown(context.Background()); err != nil {
+					log.Printf("Error shutting down tracing: %v", err)
+				}
+			}()
+		}
+	}
+
 	// Initialize handlers with configuration
 	h := handler.NewHandlerWithOptions(svc, handler.NewHandlerOptions{
 		MaxBodySize: cfg.Security.MaxRequestBodySize,
@@ -76,6 +98,11 @@ func main() {
 	r.Use(chimw.RealIP)
 	r.Use(chimw.Logger)
 	r.Use(chimw.Recoverer)
+	
+	// Tracing middleware (if enabled)
+	if cfg.Tracing.Enabled {
+		r.Use(middleware.TracingMiddleware())
+	}
 	
 	// Rate limiting middleware (if enabled)
 	if cfg.RateLimit.Enabled && rateLimiter != nil {

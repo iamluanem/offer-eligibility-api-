@@ -14,6 +14,7 @@ type Config struct {
 	Database DatabaseConfig `json:"database"`
 	Security SecurityConfig `json:"security"`
 	RateLimit RateLimitConfig `json:"rate_limit"`
+	Tracing  TracingConfig  `json:"tracing"`
 }
 
 // ServerConfig holds server-related configuration.
@@ -45,6 +46,14 @@ type RateLimitConfig struct {
 	Window  int  `json:"window"` // in seconds
 }
 
+// TracingConfig holds distributed tracing configuration.
+type TracingConfig struct {
+	Enabled     bool   `json:"enabled"`
+	Endpoint    string `json:"endpoint"`     // Jaeger endpoint
+	ServiceName string `json:"service_name"` // Service name for traces
+	Environment string `json:"environment"`  // Deployment environment
+}
+
 // LoadConfig loads configuration from environment variables and/or config file.
 // Environment variables take precedence over config file values.
 func LoadConfig(configFile string) (*Config, error) {
@@ -67,6 +76,12 @@ func LoadConfig(configFile string) (*Config, error) {
 			Enabled: getEnvBool("RATE_LIMIT_ENABLED", true),
 			Rate:    getEnvInt("RATE_LIMIT_RATE", 100),
 			Window:  getEnvInt("RATE_LIMIT_WINDOW", 60),
+		},
+		Tracing: TracingConfig{
+			Enabled:     getEnvBool("TRACING_ENABLED", false),
+			Endpoint:    getEnv("TRACING_ENDPOINT", "http://localhost:14268/api/traces"),
+			ServiceName: getEnv("TRACING_SERVICE_NAME", "offer-eligibility-api"),
+			Environment: getEnv("TRACING_ENVIRONMENT", "development"),
 		},
 	}
 
@@ -133,6 +148,18 @@ func overrideFromEnv(cfg *Config) {
 		if w, err := strconv.Atoi(window); err == nil {
 			cfg.RateLimit.Window = w
 		}
+	}
+	if enabled := os.Getenv("TRACING_ENABLED"); enabled != "" {
+		cfg.Tracing.Enabled = enabled == "true" || enabled == "1"
+	}
+	if endpoint := os.Getenv("TRACING_ENDPOINT"); endpoint != "" {
+		cfg.Tracing.Endpoint = endpoint
+	}
+	if serviceName := os.Getenv("TRACING_SERVICE_NAME"); serviceName != "" {
+		cfg.Tracing.ServiceName = serviceName
+	}
+	if environment := os.Getenv("TRACING_ENVIRONMENT"); environment != "" {
+		cfg.Tracing.Environment = environment
 	}
 }
 
