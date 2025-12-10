@@ -16,6 +16,7 @@ type Config struct {
 	RateLimit RateLimitConfig `json:"rate_limit"`
 	Tracing  TracingConfig  `json:"tracing"`
 	Features FeaturesConfig `json:"features"`
+	Cache    CacheConfig    `json:"cache"`
 }
 
 // ServerConfig holds server-related configuration.
@@ -63,6 +64,16 @@ type FeaturesConfig struct {
 	BatchProcessing       bool `json:"batch_processing"`
 }
 
+// CacheConfig holds cache configuration.
+type CacheConfig struct {
+	Enabled  bool   `json:"enabled"`
+	Type     string `json:"type"`      // "redis" or "memory"
+	Addr     string `json:"addr"`      // Redis address (e.g., "localhost:6379")
+	Password string `json:"password"`  // Redis password
+	DB       int    `json:"db"`        // Redis database number
+	TTL      int    `json:"ttl"`       // Default TTL in seconds
+}
+
 // LoadConfig loads configuration from environment variables and/or config file.
 // Environment variables take precedence over config file values.
 func LoadConfig(configFile string) (*Config, error) {
@@ -97,6 +108,14 @@ func LoadConfig(configFile string) (*Config, error) {
 			EventHooksEnabled:    getEnvBool("FEATURE_EVENT_HOOKS_ENABLED", false),
 			AdvancedEligibility: getEnvBool("FEATURE_ADVANCED_ELIGIBILITY", false),
 			BatchProcessing:      getEnvBool("FEATURE_BATCH_PROCESSING", false),
+		},
+		Cache: CacheConfig{
+			Enabled:  getEnvBool("CACHE_ENABLED", false),
+			Type:     getEnv("CACHE_TYPE", "memory"),
+			Addr:     getEnv("CACHE_ADDR", "localhost:6379"),
+			Password: getEnv("CACHE_PASSWORD", ""),
+			DB:       getEnvInt("CACHE_DB", 0),
+			TTL:      getEnvInt("CACHE_TTL", 300), // 5 minutes default
 		},
 	}
 
@@ -187,6 +206,28 @@ func overrideFromEnv(cfg *Config) {
 	}
 	if enabled := os.Getenv("FEATURE_BATCH_PROCESSING"); enabled != "" {
 		cfg.Features.BatchProcessing = enabled == "true" || enabled == "1"
+	}
+	if enabled := os.Getenv("CACHE_ENABLED"); enabled != "" {
+		cfg.Cache.Enabled = enabled == "true" || enabled == "1"
+	}
+	if cacheType := os.Getenv("CACHE_TYPE"); cacheType != "" {
+		cfg.Cache.Type = cacheType
+	}
+	if addr := os.Getenv("CACHE_ADDR"); addr != "" {
+		cfg.Cache.Addr = addr
+	}
+	if password := os.Getenv("CACHE_PASSWORD"); password != "" {
+		cfg.Cache.Password = password
+	}
+	if db := os.Getenv("CACHE_DB"); db != "" {
+		if d, err := strconv.Atoi(db); err == nil {
+			cfg.Cache.DB = d
+		}
+	}
+	if ttl := os.Getenv("CACHE_TTL"); ttl != "" {
+		if t, err := strconv.Atoi(ttl); err == nil {
+			cfg.Cache.TTL = t
+		}
 	}
 }
 
