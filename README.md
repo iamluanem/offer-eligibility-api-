@@ -205,6 +205,8 @@ cd offer-eligibility-api-
 ./test-api.sh
 ```
 
+**Note:** The test script uses `localhost:3000` by default. If your server is running on a different port, edit `test-api.sh` and change the `API_URL` variable.
+
 This script will:
 1. Check server health
 2. Create an offer
