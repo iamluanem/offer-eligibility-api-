@@ -271,7 +271,10 @@ curl "http://localhost:8080/users/d5e5c023-f9b1-4eac-b9bd-f538ccca040d/eligible-
 
 Expected response: JSON with eligible offers for the user
 
-**Note:** Replace `localhost:8080` with your server address and port if different. The UUIDs in the examples are valid UUID v4 format and can be reused for testing.
+**Note:** 
+- Make sure the server is running before testing (see Step 1 above)
+- Replace `localhost:8080` with your server address and port if different
+- The UUIDs in the examples are valid UUID v4 format and can be reused for testing
 
 ## Running Unit Tests
 
