@@ -268,6 +268,8 @@ Expected response: The created offer object (JSON)
 
 ##### 3. Create Transactions
 
+**Note:** If you get a "UNIQUE constraint failed" error, the transaction ID already exists. Generate a new UUID or use a different ID.
+
 ```bash
 curl -X POST http://localhost:8080/transactions \
   -H "Content-Type: application/json" \
@@ -284,6 +286,13 @@ curl -X POST http://localhost:8080/transactions \
 ```
 
 Expected response: `{"inserted": 1}`
+
+**Tip:** To generate a new UUID for testing:
+```bash
+python3 -c "import uuid; print(uuid.uuid4())"
+# Or
+go run -c "package main; import \"github.com/google/uuid\"; func main() { println(uuid.New().String()) }"
+```
 
 ##### 4. Check Eligible Offers
 
