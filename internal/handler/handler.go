@@ -2,12 +2,14 @@ package handler
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"offer-eligibility-api/internal/models"
 	"offer-eligibility-api/internal/service"
+	"offer-eligibility-api/internal/validation"
 )
 
 // Handler provides HTTP handlers for the API.
@@ -22,10 +24,24 @@ func NewHandler(svc *service.Service) *Handler {
 
 // CreateOffer handles POST /offers
 func (h *Handler) CreateOffer(w http.ResponseWriter, r *http.Request) {
+	// Limit request body size to prevent abuse (10MB max)
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
+
 	var req models.Offer
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.respondError(w, http.StatusBadRequest, "invalid request body")
+		if err == io.EOF {
+			h.respondError(w, http.StatusBadRequest, "request body is required")
+			return
+		}
+		h.respondError(w, http.StatusBadRequest, "invalid JSON in request body")
 		return
+	}
+
+	// Sanitize string fields
+	req.ID = validation.SanitizeString(req.ID)
+	req.MerchantID = validation.SanitizeString(req.MerchantID)
+	for i := range req.MCCWhitelist {
+		req.MCCWhitelist[i] = validation.SanitizeString(req.MCCWhitelist[i])
 	}
 
 	if err := h.service.CreateOffer(req); err != nil {
@@ -38,10 +54,26 @@ func (h *Handler) CreateOffer(w http.ResponseWriter, r *http.Request) {
 
 // CreateTransactions handles POST /transactions
 func (h *Handler) CreateTransactions(w http.ResponseWriter, r *http.Request) {
+	// Limit request body size to prevent abuse (10MB max)
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
+
 	var req models.CreateTransactionsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.respondError(w, http.StatusBadRequest, "invalid request body")
+		if err == io.EOF {
+			h.respondError(w, http.StatusBadRequest, "request body is required")
+			return
+		}
+		h.respondError(w, http.StatusBadRequest, "invalid JSON in request body")
 		return
+	}
+
+	// Sanitize all transaction fields
+	for i := range req.Transactions {
+		txn := &req.Transactions[i]
+		txn.ID = validation.SanitizeString(txn.ID)
+		txn.UserID = validation.SanitizeString(txn.UserID)
+		txn.MerchantID = validation.SanitizeString(txn.MerchantID)
+		txn.MCC = validation.SanitizeString(txn.MCC)
 	}
 
 	inserted, err := h.service.CreateTransactions(req.Transactions)
@@ -58,6 +90,8 @@ func (h *Handler) CreateTransactions(w http.ResponseWriter, r *http.Request) {
 // GetEligibleOffers handles GET /users/{user_id}/eligible-offers
 func (h *Handler) GetEligibleOffers(w http.ResponseWriter, r *http.Request) {
 	userID := chi.URLParam(r, "user_id")
+	userID = validation.SanitizeString(userID)
+	
 	if userID == "" {
 		h.respondError(w, http.StatusBadRequest, "user_id is required")
 		return
@@ -66,7 +100,8 @@ func (h *Handler) GetEligibleOffers(w http.ResponseWriter, r *http.Request) {
 	// Parse optional 'now' query parameter
 	now := time.Now().UTC()
 	if nowParam := r.URL.Query().Get("now"); nowParam != "" {
-		parsed, err := time.Parse(time.RFC3339, nowParam)
+		nowParam = validation.SanitizeString(nowParam)
+		parsed, err := validation.ValidateTimeString(nowParam)
 		if err != nil {
 			h.respondError(w, http.StatusBadRequest, "invalid 'now' parameter, must be RFC3339 format")
 			return

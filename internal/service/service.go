@@ -6,6 +6,7 @@ import (
 
 	"offer-eligibility-api/internal/database"
 	"offer-eligibility-api/internal/models"
+	"offer-eligibility-api/internal/validation"
 )
 
 // Service provides business logic for the offer eligibility API.
@@ -20,7 +21,7 @@ func NewService(db *database.DB) *Service {
 
 // CreateOffer creates or updates an offer.
 func (s *Service) CreateOffer(offer models.Offer) error {
-	if err := s.validateOffer(offer); err != nil {
+	if err := validation.ValidateOffer(offer); err != nil {
 		return err
 	}
 
@@ -33,10 +34,14 @@ func (s *Service) CreateTransactions(transactions []models.Transaction) (int, er
 		return 0, fmt.Errorf("no transactions provided")
 	}
 
+	if len(transactions) > 1000 {
+		return 0, fmt.Errorf("cannot process more than 1000 transactions per request")
+	}
+
 	// Validate all transactions before inserting
-	for _, txn := range transactions {
-		if err := s.validateTransaction(txn); err != nil {
-			return 0, fmt.Errorf("invalid transaction %s: %w", txn.ID, err)
+	for i, txn := range transactions {
+		if err := validation.ValidateTransaction(txn); err != nil {
+			return 0, fmt.Errorf("invalid transaction at index %d: %w", i, err)
 		}
 	}
 
@@ -45,8 +50,8 @@ func (s *Service) CreateTransactions(transactions []models.Transaction) (int, er
 
 // GetEligibleOffers returns all offers that a user is eligible for at the given time.
 func (s *Service) GetEligibleOffers(userID string, now time.Time) (models.EligibleOffersResponse, error) {
-	if userID == "" {
-		return models.EligibleOffersResponse{}, fmt.Errorf("user_id is required")
+	if err := validation.ValidateUUID(userID, "user_id"); err != nil {
+		return models.EligibleOffersResponse{}, err
 	}
 
 	// Get all active offers at the current time
@@ -81,43 +86,4 @@ func (s *Service) GetEligibleOffers(userID string, now time.Time) (models.Eligib
 	}, nil
 }
 
-// validateOffer performs basic validation on an offer.
-func (s *Service) validateOffer(offer models.Offer) error {
-	if offer.ID == "" {
-		return fmt.Errorf("offer id is required")
-	}
-	if offer.MerchantID == "" {
-		return fmt.Errorf("merchant_id is required")
-	}
-	if offer.StartsAt.After(offer.EndsAt) {
-		return fmt.Errorf("starts_at must be before ends_at")
-	}
-	if offer.MinTxnCount < 0 {
-		return fmt.Errorf("min_txn_count must be non-negative")
-	}
-	if offer.LookbackDays < 0 {
-		return fmt.Errorf("lookback_days must be non-negative")
-	}
-	return nil
-}
-
-// validateTransaction performs basic validation on a transaction.
-func (s *Service) validateTransaction(txn models.Transaction) error {
-	if txn.ID == "" {
-		return fmt.Errorf("transaction id is required")
-	}
-	if txn.UserID == "" {
-		return fmt.Errorf("user_id is required")
-	}
-	if txn.MerchantID == "" {
-		return fmt.Errorf("merchant_id is required")
-	}
-	if txn.MCC == "" {
-		return fmt.Errorf("mcc is required")
-	}
-	if txn.AmountCents < 0 {
-		return fmt.Errorf("amount_cents must be non-negative")
-	}
-	return nil
-}
 
