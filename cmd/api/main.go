@@ -31,33 +31,29 @@ import (
 const (
 	defaultPort       = "8080"
 	defaultDBPath     = "./offer_eligibility.db"
-	defaultRateLimit  = 100 // requests per window
-	defaultRateWindow = 60  // seconds
+	defaultRateLimit  = 100
+	defaultRateWindow = 60
 )
 
 func main() {
 	configFile := flag.String("config", "", "Path to configuration file (JSON)")
 	flag.Parse()
 
-	// Load configuration
 	cfg, err := config.LoadConfig(*configFile)
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	// Validate configuration
 	if err := cfg.Validate(); err != nil {
 		log.Fatalf("Invalid configuration: %v", err)
 	}
 
-	// Initialize database
 	db, err := database.NewDB(cfg.Database.Path)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 	defer db.Close()
 
-	// Initialize feature flags
 	featureManager := features.NewManager()
 	featureManager.Register(features.FeatureCacheEnabled, cfg.Features.CacheEnabled, "Enable caching layer")
 	featureManager.Register(features.FeatureEventHooksEnabled, cfg.Features.EventHooksEnabled, "Enable event-driven hooks")
@@ -65,7 +61,6 @@ func main() {
 	featureManager.Register(features.FeatureBatchProcessing, cfg.Features.BatchProcessing, "Enable batch processing optimizations")
 	defer featureManager.Shutdown()
 
-	// Initialize event manager (if enabled)
 	var eventManager *events.Manager
 	if cfg.Features.EventHooksEnabled {
 		eventManager = events.NewManager(true)
@@ -73,13 +68,11 @@ func main() {
 		log.Println("Event-driven hooks: enabled")
 	}
 
-	// Initialize service
 	svc := service.NewService(db)
 	if eventManager != nil {
 		svc.SetEventManager(eventManager)
 	}
 
-	// Initialize tracing (if enabled)
 	if cfg.Tracing.Enabled {
 		_, err := tracing.InitTracing(tracing.Config{
 			Enabled:     cfg.Tracing.Enabled,
@@ -99,38 +92,31 @@ func main() {
 		}
 	}
 
-	// Initialize handlers with configuration
 	h := handler.NewHandlerWithOptions(svc, handler.NewHandlerOptions{
 		MaxBodySize: cfg.Security.MaxRequestBodySize,
 	})
 
-	// Initialize rate limiter (if enabled)
 	var rateLimiter *middleware.RateLimiter
 	if cfg.RateLimit.Enabled {
 		rateLimiter = middleware.NewRateLimiter(cfg.RateLimit.Rate, time.Duration(cfg.RateLimit.Window)*time.Second)
 		defer rateLimiter.Stop()
 	}
 
-	// Setup router
 	r := chi.NewRouter()
 
-	// Middleware (order matters)
 	r.Use(chimw.RequestID)
 	r.Use(chimw.RealIP)
 	r.Use(chimw.Logger)
 	r.Use(chimw.Recoverer)
 
-	// Tracing middleware (if enabled)
 	if cfg.Tracing.Enabled {
 		r.Use(middleware.TracingMiddleware())
 	}
 
-	// Rate limiting middleware (if enabled)
 	if cfg.RateLimit.Enabled && rateLimiter != nil {
 		r.Use(middleware.RateLimitMiddleware(rateLimiter))
 	}
 
-	// CORS configuration
 	allowedOrigins := strings.Split(cfg.Security.AllowedOrigins, ",")
 	for i := range allowedOrigins {
 		allowedOrigins[i] = strings.TrimSpace(allowedOrigins[i])
@@ -164,7 +150,6 @@ func main() {
 		w.Write([]byte("OK"))
 	})
 
-	// Configure TLS if enabled
 	var tlsConfig *tls.Config
 	if cfg.Server.EnableTLS {
 		tlsCfg := tlsconfig.Config{
@@ -183,7 +168,6 @@ func main() {
 		}
 	}
 
-	// Build server address
 	addr := cfg.Server.Port
 	if cfg.Server.Host != "" {
 		addr = fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
@@ -222,15 +206,11 @@ func main() {
 	}()
 
 	if cfg.Server.EnableTLS {
-		// For TLS, we need to use ListenAndServeTLS, but since we're using TLSConfig,
-		// we'll use ListenAndServe with the TLS config already set
-		// However, ListenAndServeTLS is simpler for this case
 		if cfg.Server.CertFile != "" && cfg.Server.KeyFile != "" {
 			if err := server.ListenAndServeTLS(cfg.Server.CertFile, cfg.Server.KeyFile); err != nil && err != http.ErrServerClosed {
 				log.Fatalf("Server failed: %v", err)
 			}
 		} else {
-			// Self-signed cert - need to use custom listener
 			listener, listenErr := tls.Listen("tcp", addr, tlsConfig)
 			if listenErr != nil {
 				log.Fatalf("Failed to create TLS listener: %v", listenErr)

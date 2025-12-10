@@ -226,7 +226,6 @@ func (db *DB) CountMatchingTransactions(
 ) (int, error) {
 	lookbackStart := now.AddDate(0, 0, -offer.LookbackDays)
 
-	// Build the query to match either merchant_id or mcc in whitelist
 	query := `SELECT COUNT(*) FROM transactions
 		WHERE user_id = ?
 		AND approved_at >= ?
@@ -259,7 +258,6 @@ func (db *DB) CountMatchingTransactions(
 	return count, nil
 }
 
-// serializeMCCWhitelist converts a slice of MCC codes to a JSON string.
 func serializeMCCWhitelist(mccList []string) string {
 	if len(mccList) == 0 {
 		return "[]"

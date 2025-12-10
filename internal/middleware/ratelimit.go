@@ -10,8 +10,8 @@ import (
 type RateLimiter struct {
 	mu          sync.RWMutex
 	clients     map[string]*clientLimiter
-	rate        int           // requests per window
-	window      time.Duration // time window
+	rate        int
+	window      time.Duration
 	cleanupTick *time.Ticker
 	stopCleanup chan bool
 }
@@ -23,8 +23,6 @@ type clientLimiter struct {
 }
 
 // NewRateLimiter creates a new rate limiter.
-// rate: number of requests allowed
-// window: time window for the rate limit
 func NewRateLimiter(rate int, window time.Duration) *RateLimiter {
 	rl := &RateLimiter{
 		clients:     make(map[string]*clientLimiter),
@@ -34,13 +32,10 @@ func NewRateLimiter(rate int, window time.Duration) *RateLimiter {
 		stopCleanup: make(chan bool),
 	}
 
-	// Start cleanup goroutine to remove old entries
 	go rl.cleanup()
 
 	return rl
 }
-
-// cleanup periodically removes old client entries to prevent memory leaks.
 func (rl *RateLimiter) cleanup() {
 	for {
 		select {

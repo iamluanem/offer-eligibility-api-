@@ -21,7 +21,7 @@ type Service struct {
 func NewService(db *database.DB) *Service {
 	return &Service{
 		db:     db,
-		events: nil, // Will be set via SetEventManager if needed
+		events: nil,
 	}
 }
 
@@ -40,7 +40,6 @@ func (s *Service) CreateOffer(ctx context.Context, offer models.Offer) error {
 		return err
 	}
 
-	// Publish event
 	if s.events != nil {
 		s.events.PublishOfferCreated(ctx, offer)
 	}
@@ -58,7 +57,6 @@ func (s *Service) CreateTransactions(ctx context.Context, transactions []models.
 		return 0, fmt.Errorf("cannot process more than 1000 transactions per request")
 	}
 
-	// Validate all transactions before inserting
 	for i, txn := range transactions {
 		if err := validation.ValidateTransaction(txn); err != nil {
 			return 0, fmt.Errorf("invalid transaction at index %d: %w", i, err)
@@ -70,7 +68,6 @@ func (s *Service) CreateTransactions(ctx context.Context, transactions []models.
 		return 0, err
 	}
 
-	// Publish event
 	if s.events != nil {
 		s.events.PublishTransactionCreated(ctx, transactions, count)
 	}
@@ -84,7 +81,6 @@ func (s *Service) GetEligibleOffers(ctx context.Context, userID string, now time
 		return models.EligibleOffersResponse{}, err
 	}
 
-	// Get all active offers at the current time
 	activeOffers, err := s.db.GetActiveOffers(now)
 	if err != nil {
 		return models.EligibleOffersResponse{}, fmt.Errorf("failed to get active offers: %w", err)
@@ -93,13 +89,11 @@ func (s *Service) GetEligibleOffers(ctx context.Context, userID string, now time
 	var eligibleOffers []models.EligibleOffer
 
 	for _, offer := range activeOffers {
-		// Count matching transactions for this user and offer
 		matchCount, err := s.db.CountMatchingTransactions(userID, offer, now)
 		if err != nil {
 			return models.EligibleOffersResponse{}, fmt.Errorf("failed to count transactions: %w", err)
 		}
 
-		// Check if user meets the minimum transaction count requirement
 		if matchCount >= offer.MinTxnCount {
 			reason := fmt.Sprintf(">= %d matching transactions in last %d days (found %d)",
 				offer.MinTxnCount, offer.LookbackDays, matchCount)
@@ -115,7 +109,6 @@ func (s *Service) GetEligibleOffers(ctx context.Context, userID string, now time
 		EligibleOffers: eligibleOffers,
 	}
 
-	// Publish event
 	if s.events != nil {
 		s.events.PublishEligibilityChecked(ctx, userID, eligibleOffers)
 	}

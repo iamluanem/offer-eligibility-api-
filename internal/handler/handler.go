@@ -27,7 +27,7 @@ type NewHandlerOptions struct {
 // DefaultHandlerOptions returns default handler options.
 func DefaultHandlerOptions() NewHandlerOptions {
 	return NewHandlerOptions{
-		MaxBodySize: 10 << 20, // 10MB default
+		MaxBodySize: 10 << 20,
 	}
 }
 
@@ -46,7 +46,6 @@ func NewHandlerWithOptions(svc *service.Service, opts NewHandlerOptions) *Handle
 
 // CreateOffer handles POST /offers
 func (h *Handler) CreateOffer(w http.ResponseWriter, r *http.Request) {
-	// Limit request body size to prevent abuse
 	r.Body = http.MaxBytesReader(w, r.Body, h.maxBodySize)
 
 	var req models.Offer
@@ -59,7 +58,6 @@ func (h *Handler) CreateOffer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Sanitize string fields
 	req.ID = validation.SanitizeString(req.ID)
 	req.MerchantID = validation.SanitizeString(req.MerchantID)
 	for i := range req.MCCWhitelist {
@@ -76,7 +74,6 @@ func (h *Handler) CreateOffer(w http.ResponseWriter, r *http.Request) {
 
 // CreateTransactions handles POST /transactions
 func (h *Handler) CreateTransactions(w http.ResponseWriter, r *http.Request) {
-	// Limit request body size to prevent abuse
 	r.Body = http.MaxBytesReader(w, r.Body, h.maxBodySize)
 
 	var req models.CreateTransactionsRequest
@@ -89,7 +86,6 @@ func (h *Handler) CreateTransactions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Sanitize all transaction fields
 	for i := range req.Transactions {
 		txn := &req.Transactions[i]
 		txn.ID = validation.SanitizeString(txn.ID)
@@ -119,7 +115,6 @@ func (h *Handler) GetEligibleOffers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse optional 'now' query parameter
 	now := time.Now().UTC()
 	if nowParam := r.URL.Query().Get("now"); nowParam != "" {
 		nowParam = validation.SanitizeString(nowParam)
