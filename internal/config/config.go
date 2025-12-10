@@ -15,6 +15,7 @@ type Config struct {
 	Security SecurityConfig `json:"security"`
 	RateLimit RateLimitConfig `json:"rate_limit"`
 	Tracing  TracingConfig  `json:"tracing"`
+	Features FeaturesConfig `json:"features"`
 }
 
 // ServerConfig holds server-related configuration.
